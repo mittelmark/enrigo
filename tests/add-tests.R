@@ -1,4 +1,4 @@
-library(Rpkg)
+library(enrigo)
 
 x = 2 + 2
 

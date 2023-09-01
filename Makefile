@@ -1,6 +1,6 @@
 VERSION := $(shell grep Version: DESCRIPTION | perl -pe 's/.+: //')
 PKG     := $(shell basename `pwd`)
-build: man/add.Rd man/goutil.Rd man/enr.Rd
+build: man/goutil.Rd man/enr.Rd
 	R CMD build .
 
 check: build 

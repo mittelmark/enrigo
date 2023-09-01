@@ -38,4 +38,3 @@ License: MIT License see the file [LICENSE](LICENSE) for details.
 
 In case of bugs and suggestions, use the [issues](https://github.com/mittelmark/enrigo/issues) link on top.
 
-[issues](../../issues)

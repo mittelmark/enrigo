@@ -1,1 +1,3 @@
 exportPattern("^[[:lower:]]+")
+importFrom("utils", "download.file", "read.table")
+

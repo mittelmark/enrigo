@@ -20,8 +20,12 @@ library(knitr)
 Below you find example code for the package...
 
 ```{r}
-x=1
-print(x)
+library(enrigo)
+getwd()
+list.files()
+list.files("..")
+goutil$download(2023)
+ls(goutil)
 ```
 
 ## Plot example

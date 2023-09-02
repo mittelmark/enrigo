@@ -25,10 +25,32 @@ getwd()
 list.files()
 list.files("..")
 goutil$download(2023)
+list.files()
+Sys.time()
+goutil$new("2023-01-01-go.obo")
+Sys.time()
+list.files()
 ls(goutil)
 ```
 
+A GO image retrieved from the EBI QuickGO webservice :
+
+![](`r goutil$quickGO('GO:0003676')`)
+
+An other GO image retrieved from the Kroki webservice using PlantUML :
+
+![](`r goutil$kroki('GO:0003676')`)
+
+
 ## Plot example
+
+```{r fig=TRUE,fig.width=6,fig.height=6}
+goutil$quickGO('GO:0003676',plot=TRUE)
+```
+
+```{r fig=TRUE,fig.width=6,fig.height=6}
+goutil$kroki('GO:0003676',plot=TRUE)
+```
 
 ```{r fig=TRUE,fig.width=9,fig.height=6}
 data(iris)

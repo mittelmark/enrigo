@@ -9,7 +9,6 @@ annotations. Enrichment analysis for gene lists and graphical visualizations are
 \section{Methods}{ 
 \itemize{ 
 \item \code{\link[enrigo:goutil_new]{goutil$new}}{initialize the required GO data using the given obo file} 
-\item \code{\link[enrigo:goutil_read.obofile]{goutil$read.obofile}}{ reads the given obofile and returns the result} 
 \item \code{\link[enrigo:goutil_altid2new]{goutil$altid2new}}{convert old alternative GO ids to their new counterpart} 
 \item \code{\link[enrigo:goutil_getChildren]{goutil$getChildren}}{get the child nodes of a given GO id} 
 \item \code{\link[enrigo:goutil_getEntry]{goutil$getEntry}}{get the GO entry in standard text for a given GO id} 
@@ -24,6 +23,8 @@ annotations. Enrichment analysis for gene lists and graphical visualizations are
 \item \code{\link[enrigo:goutil_isChild]{goutil$isChild}}{check if a given GO id is a direct child of a given parent id} 
 \item \code{\link[enrigo:goutil_isParent]{goutil$isParent}}{check if a given GO id is a direct parent of a given child id} 
 \item \code{\link[enrigo:goutil_kroki]{goutil$kroki}}{create a GO tree graph using the kroki webservie} 
+\item \code{\link[enrigo:goutil_quickGO]{goutil$quickGO}}{create a GO tree graph using the EBI QuickGO webservie} 
+\item \code{\link[enrigo:goutil_read.obofile]{goutil$read.obofile}}{ reads the given obofile and returns the result} 
 } 
 } 
 \examples{ 

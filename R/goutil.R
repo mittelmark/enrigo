@@ -10,7 +10,6 @@
 #' \section{Methods}{
 #' \itemize{
 #' \item \code{\link[enrigo:goutil_new]{goutil$new}}{initialize the required GO data using the given obo file}
-#' \item \code{\link[enrigo:goutil_read.obofile]{goutil$read.obofile}}{ reads the given obofile and returns the result}
 #' \item \code{\link[enrigo:goutil_altid2new]{goutil$altid2new}}{convert old alternative GO ids to their new counterpart}
 #' \item \code{\link[enrigo:goutil_getChildren]{goutil$getChildren}}{get the child nodes of a given GO id}
 #' \item \code{\link[enrigo:goutil_getEntry]{goutil$getEntry}}{get the GO entry in standard text for a given GO id}
@@ -25,6 +24,8 @@
 #' \item \code{\link[enrigo:goutil_isChild]{goutil$isChild}}{check if a given GO id is a direct child of a given parent id}
 #' \item \code{\link[enrigo:goutil_isParent]{goutil$isParent}}{check if a given GO id is a direct parent of a given child id}
 #' \item \code{\link[enrigo:goutil_kroki]{goutil$kroki}}{create a GO tree graph using the kroki webservie}
+#' \item \code{\link[enrigo:goutil_quickGO]{goutil$quickGO}}{create a GO tree graph using the EBI QuickGO webservie}
+#' \item \code{\link[enrigo:goutil_read.obofile]{goutil$read.obofile}}{ reads the given obofile and returns the result}
 #' }
 #' }
 #' \examples{
@@ -168,6 +169,7 @@ goutil$read.obofile <- function (obofile) {
     tree$parent=substr(tree$parent,7,16)
     obs=substr(obs,5,15)
     names=data.frame(id=substr(tab[idx,],5,15),nsp=gsub(".+: ","",tab[idx+2,]),name=gsub(".+: ","",tab[idx+1,]))
+    names$nsp=gsub(".+_(.).+","\\1",names$nsp)
     print(Sys.time()-t1)
     fin  = file(obofile, "r")
     x=0
@@ -525,6 +527,7 @@ goutil$getTree <- function (goid) {
 
 ## Plotting
 ## https://www.ebi.ac.uk/QuickGO/services/ontology/go/terms/%7Bids%7D/chart?ids=GO%3A0003676
+## https://www.ebi.ac.uk/QuickGO/services/ontology/go/terms/%7Bids%7D/chart?ids=GO%3A0003676%2CGO%3A0005488&showKey=false
 ## > ![See https://www.ebi.ac.uk/QuickGO/term/GO:0003676](img/go0003676-tree.png)
 
 
@@ -703,10 +706,11 @@ goutil$getStats <- function () {
 #' \description{
 #' This function can be used to embed images for Gene Ontology trees into an HTML page.
 #' }
-#' \usage{ goutil_kroki(goid) }
+#' \usage{ goutil_kroki(goid,plot=FALSE) }
 #'
 #' \arguments{
 #'   \item{goid}{single Gene Ontology id}
+#'   \item{plot}{should the image plotted into a standard R plot, requires the png package, default: FALSE}
 #' }
 #' \value{returns a URL which can be embedded into a Markdown URL for instance}
 #' \examples{
@@ -714,7 +718,7 @@ goutil$getStats <- function () {
 #' }
 #' 
 
-goutil$kroki <- function (goid) {
+goutil$kroki <- function (goid,plot=FALSE) {
     if (!requireNamespace("tcltk")) {
         stop("Funktion goutul$kroki can only be used if package tcltk is installed!")
     }
@@ -775,8 +779,71 @@ skinparam ClassHeaderBackgroundColor #EEEEEE
     letter=goutil$getNamespace(tree[1])
     puml=graph2plantuml(treem,letter=toupper(letter),labels=gsub("_"," ",goutil$getName(tree)))
     url=plantuml2kroki(puml)
-    return(url)
+    if (plot) {
+        if (!requireNamespace("png")) {
+            stop("Plotting QuickGO images required the png package!Please install!")
+        }
+        download.file(url,destfile="temp.png",quiet=TRUE)
+        img=png::readPNG("temp.png")
+        d=dim(img)
+        opar=par(mai=rep(0.2,4))
+        plot(1,type="n",axes=FALSE,xlab="",ylab="",ylim=c(0,max(d)),xlim=c(0,max(d)))
+        graphics::rasterImage(img,(max(d)-d[2])/2,(max(d)-d[1])/2,
+                              max(d)-(max(d)-d[2])/2,max(d)-(max(d)-d[1])/2)
+        file.remove("temp.png")
+        par(opar)
+        invisible(url)
+    } else {
+        return(url)
+    }
 }
+
+#' \name{goutil$quickGO}
+#' \alias{goutil_quickGO}
+#' \alias{goutil$quickGO}
+#' \title{Return an URL for a QuickGO graph using the EBI webservice}
+#' \description{
+#' This function can be used to embed images for Gene Ontology trees into a Markdown or HTML document.
+#' }
+#' \usage{ goutil_quickGO(goid,key=FALSE,children=FALSE,plot=FALSE) }
+#'
+#' \arguments{
+#'   \item{goid}{single Gene Ontology id}
+#'   \item{key}{show the legend, default: FALSE}
+#'   \item{children}{show the child terms of a GO id}
+#'   \item{plot}{should the image plotted into a standard R plot, requires the png package, default: FALSE}
+#' }
+#' \value{returns a URL which can be embedded into a Markdown URL for instance}
+#' \examples{
+#' goutil$quickGO("GO:0000001")
+#' goutil$quickGO("GO:0003674",children=TRUE)
+#' }
+#' 
+
+## information:
+## https://www.ebi.ac.uk/QuickGO/api/index.html#!/gene_ontology/getChartUsingGET_1
+goutil$quickGO <- function (goid,key=FALSE,children=FALSE,plot=FALSE) {
+    url=paste("https://www.ebi.ac.uk/QuickGO/services/ontology/go/terms/%7Bids%7D/chart?ids=",gsub(":","%3A",goid),"&showKey=",tolower(key),"&showChildren=",tolower(children),sep="")
+    if (plot) {
+        if (!requireNamespace("png")) {
+            stop("Plotting QuickGO images required the png package!Please install!")
+        }
+        download.file(url,destfile="temp.png",quiet=TRUE)
+        img=png::readPNG("temp.png")
+        d=dim(img)
+        opar=par(mai=rep(0.2,4))
+        plot(1,type="n",axes=FALSE,xlab="",ylab="",ylim=c(0,max(d)),xlim=c(0,max(d)))
+        graphics::rasterImage(img,(max(d)-d[2])/2,(max(d)-d[1])/2,
+                              max(d)-(max(d)-d[2])/2,max(d)-(max(d)-d[1])/2)
+        file.remove("temp.png")
+        par(opar)
+        invisible(url)
+    } else {
+        return(url)
+    }
+}
+
+    
 
 goutil_new = goutil$new
 goutil_altid2new = goutil$altid2new
@@ -794,4 +861,5 @@ goutil_getTreeMatrix = goutil$getTreeMatrix
 goutil_isChild = goutil$isChild
 goutil_isParent = goutil$isParent
 goutil_kroki = goutil$kroki
+goutil_quickGO = goutil$quickGO
 goutil_read.obofile = goutil$read.obofile

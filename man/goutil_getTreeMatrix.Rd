@@ -9,7 +9,7 @@
 \usage{ goutil_getTreeMatrix(tree) } 
  
 \arguments{ 
-  \item{tree}{a list of GO ids, usually create with the goutil$getTee function} 
+  \item{tree}{a list of GO ids, usually created with the goutil$getTee function or a single GO id, in this case the `getTree` function will be called internally} 
 } 
 \examples{ 
  goutil$new("2023-01-01-go.obo") 

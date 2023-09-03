@@ -199,10 +199,11 @@ goutil$read.obofile <- function (obofile) {
 #' \description{
 #'   This function is used to download the Obo file for the given year from the gene ontology side.
 #' }
-#' \usage{ goutil_download(version) }
+#' \usage{ goutil_download(version,...) }
 #'
 #' \arguments{
 #'   \item{version}{ Either such as 2005 or higher or character string for a version name like "2023-01-01" }
+#'   \item{\ldots}{Other arguments delegated to the function download.file}
 #' }
 #' \details{
 #'   This function downloads the GO obofile from the Gene Ontolofy website.
@@ -213,7 +214,7 @@ goutil$read.obofile <- function (obofile) {
 #' }
 #' 
 
-goutil$download <- function (version) {
+goutil$download <- function (version,...) {
     # versions from 2005-2023 are supperted
     if (is.numeric(version)) {
         if (version == 2022) {
@@ -232,10 +233,10 @@ goutil$download <- function (version) {
     dfile=paste(version,"-go.obo",sep="")
     if (grepl("^2019",version) | grepl("^202",version)) {
         download.file(paste("http://release.geneontology.org/",version,"/ontology/go.obo",sep=""),
-                      destfile=dfile)
+                      destfile=dfile,...)
     } else {
         download.file(paste("http://release.geneontology.org/",version,"/ontology/gene_ontology.obo",sep=""),
-                      destfile=dfile)
+                      destfile=dfile,...)
     }
     return(dfile)
 }
@@ -291,7 +292,7 @@ goutil$altid2new <- function (goid) {
 #' \value{text entry belonging to the given GO id}
 #' \examples{
 #' obofile=goutil$new("2023-01-01-go.obo")
-#' writeLines(unlist(lapply(goutil$getEntry("GO:0000001"),strwrap, 80, exdent=6)))
+#' goutil$getEntry('GO:0003676')
 #' }
 #' 
 
@@ -315,6 +316,7 @@ goutil$getEntry = function (goid) {
         
     }
     close(fin)
+    entry=writeLines(unlist(lapply(entry,strwrap, 80, exdent=6)))
     return(entry)
 }
 
@@ -516,7 +518,7 @@ goutil$getTree <- function (goid) {
 #' \usage{ goutil_getTreeMatrix(tree) }
 #'
 #' \arguments{
-#'   \item{tree}{a list of GO ids, usually create with the goutil$getTee function}
+#'   \item{tree}{a list of GO ids, usually created with the goutil$getTee function or a single GO id, in this case the `getTree` function will be called internally}
 #' }
 #' \examples{
 #'  goutil$new("2023-01-01-go.obo")
@@ -533,6 +535,9 @@ goutil$getTree <- function (goid) {
 
 goutil$getTreeMatrix <- function (tree) {
     self=goutil
+    if (length(tree)  == 1) {
+        tree=self$getTree(tree)
+    }
     M=matrix(0,ncol=length(tree),nrow=length(tree))
     rownames(M)=colnames(M)=tree
     for (i in 1:length(tree)) {

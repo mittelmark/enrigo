@@ -14,6 +14,6 @@ Before the function can work first a GO obo file must be read in using the funct
 \value{text entry belonging to the given GO id} 
 \examples{ 
 obofile=goutil$new("2023-01-01-go.obo") 
-writeLines(unlist(lapply(goutil$getEntry("GO:0000001"),strwrap, 80, exdent=6))) 
+goutil$getEntry('GO:0003676') 
 } 
  

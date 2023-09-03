@@ -1,48 +1,187 @@
 ---
-title: "Vignette for the package ..."
-author: Max Musterman
-date: 2023-02-05
+title: Vignette enrigo package
+author: Detlef Groth, University of Potsdam, Germany
+date: 2023-09-03 09:40
 output: 
     rmarkdown::html_vignette:
         toc: true
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{Vignette enrigo package}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+include-before: |
+    <style> 
+    body { max-width: 1000px; font-family: Candara, sans-serif;} 
+    table { min-width: 400px; border-spacing: 5px;  border-collapse: collapse; }
+    </style>
 ---
 
 ```{r echo=FALSE,results="hide"}
 library(knitr)
 ```
 
-## Introduction
+# Introduction
 
-Below you find example code for the package...
+This is tutorial for the enrigo package which allow the  enrichment  analysis
+of gene  ontology  terms. The  package  contains  two R objects,  the `goutil`
+object which allows you to work with the information provided in gene ontology
+files in the Obo file format and the `enr` object  which uses the  information
+in so called gene ontology association files (gaf), files containing a mapping
+between gene identifiers and GO identifiers.
+
+# goutil object
+
+## Initialization
+
+Let's  first load the  package  and have an overview  about the methods of the
+`goutil`  object.  Before you can start using the methods you have to download
+gene ontology Obo       files       from       the       website
+[https://www.gene-ontology.org](https://www.gene-ontology.org).
+
+There is the method  `goutil$download`  which  helps with this. You can either
+give a year or a concrete  version string like  `2023-01-01`. If you just give
+the year the  first  version  released  in that  year  will be  download.  The
+function  returns the file name which was  downloaded.  Let's download the OBo
+files from January 2020 and 2023 for instance.
+
 
 ```{r}
 library(enrigo)
 getwd()
 list.files()
 list.files("..")
-goutil$download(2023)
+goutil$download(2020,quiet=TRUE)
+goutil$download(2023,quiet=TRUE)
 list.files()
-Sys.time()
+```
+
+After your  downloaded  the file you can initialize  your `goutil` object with
+this new file. If you do this the first  time R will  parse that file and will
+extract  the  required  time. This  might  take a few  minutes as R is not the
+fastest  text  parser. In  subsequent  analysis  this will be much faster as R
+caches the parsing result in an RDS file in parallel to the Obo file. 
+
+```{r}
+### measure the processing time
+t1=Sys.time()
 goutil$new("2023-01-01-go.obo")
-Sys.time()
+print(Sys.time()-t1)
 list.files()
+```
+
+As you can see in  addition to the obo file there is now a RDS file which will
+be used in subsequence initializations, thus saving processing time.
+
+```{r}
+t1=Sys.time()
+goutil$new("2023-01-01-go.obo")
+print(Sys.time()-t1)
+```
+
+After  initialization you can start using the methods provided by the `goutil`
+object. Let's first get a list of the existing functions.
+
+```{r}
 ls(goutil)
 ```
 
-A GO image retrieved from the EBI QuickGO webservice :
+Basically  you can  distinguish  between 3 different  type of functions in the
+`goutil` object.
 
-![](`r goutil$quickGO('GO:0003676')`)
+* initialization functions, download, new, read.obofile
+* retrieving information about GO ids, getName, getNamespace, getTree etc
+* plotting or image functions, kroki, quickGO
+* obo file functions, getOboVersion, getStats
 
-An other GO image retrieved from the Kroki webservice using PlantUML :
+Let's continue with the information functions
+
+## Entry information
+
+You can extract  information  about  individual  GO id(s) using  methods  like
+getEntry, getName, getNamespace and others. Here some examples:
+
+```{r}
+childs=goutil$getChildren('GO:0008150')
+for (child in childs) {
+    cat(child,"\t",goutil$getNamespace(child),"\t",goutil$getName(child),"\n",sep="")
+}
+```
+
+Individual  entries  from the text base can be  retrieved  using the  getEntry
+function.
+
+```{r}
+cat(goutil$getEntry("GO:0000001"))
+```
+
+## Graph information
+
+Functions like getParent, getChildren, isChild, isParent, getTree, getTreeMatrix
+can be used to access  information  about the  position of a GO id in the gene
+ontology graph. Here an example:
+
+```{r}
+goutil$getName('GO:0000001')
+goutil$getParent('GO:0000001')
+goutil$getChildren('GO:0000001')
+goutil$isChild('GO:0000001','GO:0000002')
+```
+
+To get all parent  nodes for a given gene  ontology  id we can use the getTree
+method  which returns all parent nodes and their parents recursively up to the
+root level of the hierarchy.
+
+```{r}
+goutil$getTree('GO:0000001')
+```
+
+This just list all of these GO ids, to get an  adjacency  matrix for the graph
+structure you can use the function getTreeMatrix:
+
+```{r}
+options(width=90)
+goutil$getTreeMatrix('GO:0000001')
+```
+
+This might be helpful in case you like to visualize the data using a R package
+like  `igraph`.  There are  however  as well two plot  function  in the `goutil`
+object  available  which are using two  webservices which are described in the
+next section.
+
+## Plotting and image functions
+
+There are two functions,  `goutil$quickGO` using the EBI QuickGO webservice and
+`goutil$kroki` using the kroki webservice to visualize a Gene Ontology graph.
+
+They can be used to retrieve the URL for the given Gene Ontology identifier or
+to plot  directly  onto a R plot, the latter  required  the R png  package to be
+installed on the machine, so before you can do this you should do a:
+
+```{r eval=FALSE}
+install.package("png")
+```
+
+Here an example to retrieve the URL's for the the GO identifier GO:0003676:
+
+```{r}
+goutil$quickGO('GO:0003676')
+goutil$kroki('GO:0003676')
+```
+
+These  URL's  can be embedded  in your  Markdown  or HTML  document  for
+instance like this (Markdown syntax for the QuickGO service):
+
+```
+### remove space before r
+![](` r goutil$quickGO('GO:0003676')`)
+```
+
+A GO graph image retrieved from the Kroki  webservice using PlantUML syntax in
+the background:
 
 ![](`r goutil$kroki('GO:0003676')`)
 
 
-## Plot example
 
 ```{r fig=TRUE,fig.width=6,fig.height=6}
 goutil$quickGO('GO:0003676',plot=TRUE)
@@ -52,26 +191,41 @@ goutil$quickGO('GO:0003676',plot=TRUE)
 goutil$kroki('GO:0003676',plot=TRUE)
 ```
 
-```{r fig=TRUE,fig.width=9,fig.height=6}
-data(iris)
-par(mfrow=c(1,2),mai=rep(0.8,4))
-plot(iris$Sepal.Width~iris$Sepal.Length,
-    col=as.numeric(iris$Species)+1,pch=15)
-plot(iris$Petal.Width~iris$Petal.Length,
-    col=as.numeric(iris$Species)+1,pch=15)
+## Gene Ontology statistics
+
+There are two functions  which can be used to retrieve  information  about the
+currently used GO file:
+
+```{r}
+goutil$getOboVersion()
+goutil$getStats()
 ```
 
-## Table Example
+The same can be embedded as well directly into the text using for instance the
+`knitr::kable` function:
+
 
 ```{r results="asis"}
-knitr::kable(head(iris))
+knitr::kable(goutil$getStats(),
+    caption=paste("**Statistics for GO version ",goutil$getOboVersion(),"**",sep=""))
 ```
 
-## Inline expression
+# enr object
 
-The dataset iris has `r nrow(iris)` plants.
+Now a short review of the functions available by the `enr` object.
 
-## EOF
+There is as well here a download  function  which  allows you to download  the
+Gene Ontology annotation files (GAF) either from the GO website - 
+[https://geneontology.org/docs/download-go-annotations/](https://geneontology.org/docs/download-go-annotations/)
+or  the GAF files  from         the         Hymenoptera         Genome         Database
+[https://hymenoptera.elsiklab.missouri.edu/](https://hymenoptera.elsiklab.missouri.edu/),
+which as well provides GAF files here: [https://data.elsiklab.missouri.edu/downloads/hgd/HGD-GO-Annotation/gaf/](https://data.elsiklab.missouri.edu/downloads/hgd/HGD-GO-Annotation/gaf/)
 
+To see the  available  species you can just call the function `gaf` of the enr
+object.
+
+```{r}
+sort(names(enr$gaf()))
+```
 
 

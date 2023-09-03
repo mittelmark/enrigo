@@ -25,7 +25,6 @@ Currently the following functions are implemented for the `goutil` object::
 - `goutil$isParent` - check if a given GO id is a direct parent of a given child id
 - `goutil$kroki` - create a GO tree graph using the kroki webservie
 - `goutil$quickGO` - create a GO tree graph using the EBI QuickGO webservie
-- `goutil$read.obofile` -  reads the given obofile and returns the result
 
 And  here  the  methods  for the `enr`  object  with  which  you  perform  the
 enrichment analysis using GAF files (incomplete):

@@ -4,13 +4,33 @@ Enrichment analysis for Gene Ontology terms.
 
 ## Functions
 
-Currently the following functions are implemented:
+Currently the following functions are implemented for the `goutil` object::
 
 
-- `goutil$new(obofile)`  - initialize the goutil object
-- `goutil$download(version)`  - download a Gene Ontology obo file
-- `goutil$read.obofile(obofile)` - read and parse a Gene Ontology obo file
-- `gaf$new(x)` - initialize a Gene Ontology annotation
+- `goutil$new`  - initialize the goutil object
+- `goutil$download`  - download a Gene Ontology obo file
+- `goutil$read.obofile` - read and parse a Gene Ontology obo file
+- `goutil$altid2new` - convert old alternative GO ids to their new counterpart
+- `goutil$getChildren` - get the child nodes of a given GO id}
+- `goutil$getEntry` - get the GO entry in standard text for a given GO id}
+- `goutil$getName` - get the name of (a) given GO ids
+- `goutil$getNamespace` - get the namespace of (a) given GO ids
+- `goutil$getOboVersion` - get the actual version date for the current obo file
+- `goutil$getParent` - get the parent node(s) for a given GO id
+- `goutil$getSlims` - get GO-slims, or the GO ids for a given slim
+- `goutil$getStats` - statistics for the three main namespaces and the number of obsolete terms}
+- `goutil$getTree` - reads recursively all parents nodes for a given GO id
+- `goutil$getTreeMatrix` - adjacency matrix for the given ids in tree
+- `goutil$isChild` - check if a given GO id is a direct child of a given parent id
+- `goutil$isParent` - check if a given GO id is a direct parent of a given child id
+- `goutil$kroki` - create a GO tree graph using the kroki webservie
+- `goutil$quickGO` - create a GO tree graph using the EBI QuickGO webservie
+- `goutil$read.obofile` -  reads the given obofile and returns the result
+
+And  here  the  methods  for the `enr`  object  with  which  you  perform  the
+enrichment analysis using GAF files (incomplete):
+
+- `enr$gaf(x)` - initialize a Gene Ontology annotation or query the annotation databases
 
 ## Installation 
 

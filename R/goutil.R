@@ -352,7 +352,7 @@ goutil$getName <- function (goid) {
     }
     if (length(goid)==1) {
         name=self$godata$names$name[self$godata$names$id==goid]
-        if (is.null(name)) {
+        if (identical(name,character(0))) {
             return(NA)
         } else {
             return(name)
@@ -767,6 +767,30 @@ skinparam ClassHeaderBackgroundColor #EEEEEE
         str=paste("@startuml\n",str,"\n@enduml\n")
         return(str)
     }
+    plantuml2puml <- function (text) {
+        requireNamespace('tcltk')
+        tcltk::.Tcl("
+        proc dia2plantuml {text {ext png}} {
+            ### plantuml does use a different order in encoding
+            set b64 ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/
+            set pml 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_
+
+            set lmapper [list]
+            set i 0
+            foreach char [split $b64 \"\"] {
+                lappend lmapper $char
+                lappend lmapper [string range $pml $i $i]
+                incr i
+            }
+            set b64 [string map $lmapper [binary encode base64 [zlib compress [encoding convertto utf-8 $text]]]]
+            set uri https://www.plantuml.com/plantuml/$ext/~1$b64
+            return $uri
+        }
+        ")
+        url = tcltk::tclvalue(tcltk::tcl("dia2plantuml",text))
+        return(url)
+    }
+    
     plantuml2kroki <- function (text) {
         if (!requireNamespace("tcltk")) {
             stop("Funktion goutil$kroki can only be used if package tcltk is installed!")
@@ -779,11 +803,10 @@ skinparam ClassHeaderBackgroundColor #EEEEEE
         url = tcltk::tclvalue(tcltk::tcl("dia2kroki",text))
         url= paste("https://kroki.io/plantuml/png",url,sep="/")
     }
-
     treem=goutil$getTreeMatrix(tree)
     letter=goutil$getNamespace(tree[1])
     puml=graph2plantuml(treem,letter=toupper(letter),labels=gsub("_"," ",goutil$getName(tree)))
-    url=plantuml2kroki(puml)
+    url=plantuml2puml(puml)
     if (plot) {
         if (!requireNamespace("png")) {
             stop("Plotting QuickGO images required the png package!Please install!")

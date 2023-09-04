@@ -1,3 +1,5 @@
 exportPattern("^[[:lower:]]+")
 importFrom("utils", "download.file", "read.table")
 importFrom("graphics", "par")
+importFrom("stats", "chisq.test",
+     "fisher.test", "p.adjust")

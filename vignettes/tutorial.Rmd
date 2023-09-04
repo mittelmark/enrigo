@@ -1,7 +1,7 @@
 ---
 title: Vignette enrigo package
 author: Detlef Groth, University of Potsdam, Germany
-date: 2023-09-03 12:38
+date: 2023-09-04 21:23
 output: 
     rmarkdown::html_vignette:
         toc: true
@@ -237,3 +237,111 @@ colnames(tab)[1]="URL"
 knitr::kable(tab)
 ```
 
+## Enrichment analysis
+
+Let's now perform an enrichment  analysis for GO terms. Usually we have a list
+of genes and some of these genes might be  significantly  changed between some
+conditions.  Often we would like to group these  changed,  often  up-regulated
+genes and for this  purpose GO terms can be used. We are  interested  which GO
+terms  appear in this list of  (possibly  up-regulated)  genes more often than
+expected by chance, i.e. they are enriched. 
+
+
+So for the enrichment analysis we need a list of genes, one is the list of all
+genes we were  evaluating,  the  other is a subset  of this  list, the list of
+genes  which is  changed  under a certain  conditions,  as I said of this list
+considers up- or  down-regulated  genes. The second thing we need is a mapping
+of genes to GO terms. Such mappings are provided via GO annotation files. This
+package supports annotation files from the Gene Ontology website, 
+[https://geneontology.org/docs/download-go-annotations/](https://geneontology.org/docs/download-go-annotations/)
+or from the Hymenoptera Genome Database
+[https://hymenoptera.elsiklab.missouri.edu/](https://hymenoptera.elsiklab.missouri.edu/).
+Beside of this we need a GO obo file  where the  release  file is close to the
+release date of the annotation file. Let's start first with downloading the GO
+obo file and the GO annotation  file. As an example we will annotate  genes of
+*Apis mellifera*.
+
+
+```{r}
+### download and initialize goutil object with GO obofile from January 2022
+fname=goutil$download(2022)
+goutil$new(fname)
+### download and initialize enr object with Apis mellifera GAF file
+enr$gaf("Apis mellifera")
+enr$new()
+list.files()
+```
+
+As you can see there are now three  files, one Obo file, one Obo data file and
+the annotation file.
+
+
+We will now  create a random  set of genes,  one full set of 100 genes and one
+subset  which should  simulate  some  up-regulated  genes. To get at least one
+enriched  term  we  will  add two  times  genes  ('Lys-3'  - gene  symbol  and
+'LOC113218576' and NCBI identifier) which are  annotated  with the rare
+term 'GO:0003796', lysozyme activity.
+
+Here you see the term and its parent nodes:
+
+![](`r goutil$kroki('GO:0003796')`)
+
+```{r}
+fullset=sample(unique(enr$data$godata$ID1),88)
+## some symbols
+# add some non-annotated stupid gene ids
+fullset=c(fullset, sprintf("dummy%02i",1:10))
+# just select some random genes for enrichment analysis
+subset=sample(fullset,8) 
+fullset=unique(c(fullset,'Lys-3','LOC113218576'))
+subset=unique(c(subset,'Lys-3','LOC113218576'))
+length(fullset)
+length(subset)
+```
+
+Not all genes have  usually  already a GO  annotation  let's check how many of
+them have, here we know that we have added 10 dummy genes. To find this out we
+should usually convert all gene symbols to NCBI gene  identifiers, for this we
+can use the function `enr$symbol2loc`.
+
+```{r}
+# How many genes of the subset are in the GAF file
+subset
+gaf.subset=intersect(enr$symbol2loc(subset),enr$data$godata$ID1)
+length(gaf.subset)
+gaf.subset
+# How many genes of the fullset are in the GAF file
+gaf.fullset=intersect(enr$symbol2loc(fullset),enr$data$godata$ID1)
+length(gaf.fullset)
+```
+
+As you can see genes which are not in the  annotation  file are excluded. This
+is as well done internally in the `gaf$enrichment`  function, so do not wonder
+why the number of genes used in the  statistics  is not the same as the number
+of genes you put into the function. As this elimination of non-annotated genes
+is done internally we can put all genes into the analysis.
+
+```{r}
+options(width=120)
+df=enr$enrichment(fullset,subset)
+df$go_name=gsub("(.{20})(.{3,})","\\1 ...",df$go_name)
+head(df)
+dim(df)
+```
+
+Sometimes  we would  like to see not all GO terms, but only some major  terms.
+For this the so called  slim-subsets  can be used, here for  instance we could
+use the slims for an other insect, *Drosphila melanogaster*.
+
+```{r}
+# Now let's only display the drosophila slims
+slims=goutil$getSlims(slim="drosophila")
+length(slims)
+tfslim=rep(FALSE,nrow(df))
+tfslim[df$go_id %in% slims]=TRUE
+table(tfslim)
+### attached slim information
+enr=cbind(df,p_slim=tfslim)
+### just show slim GO's
+enr[enr$p_slim==TRUE,]
+```

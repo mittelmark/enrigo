@@ -57,8 +57,9 @@ enr$gaf = function (x=NULL) {
         while(length((line = readLines(fin,n=1)))>0) {
             if (grepl("<b>[A-Z][a-z]+ [a-z]+</b>",line)) {
                 s=gsub(".+<b>([A-Z][a-z]+ [a-z]+)</b>","\\1",line)
-            } else if (grepl("<a href=\"http://current.geneontology.org/annotations/.+gaf.gz",line)) {
-                f=gsub(".+annotations/(.+).gaf.gz.+","\\1",line)
+            } else if (grepl("<a href=\"http://current.geneontology.org/annotations/.+?gaf.gz",line)) {
+                f=gsub(".+annotations/(.+?.gaf.gz).+","\\1",line)
+                f=paste("http://current.geneontology.org/annotations/",f,sep="")
                 spec[[s]]=f
             }
         }
@@ -79,7 +80,7 @@ enr$gaf = function (x=NULL) {
         # must be a species
         spec=enr$gaf()
         if (!x %in% names(spec)) {
-            stop("Error: Given species is not available!\nValid species names are:", paste(names(spec),sep="', '"))
+            stop("Error: Given species is not available!\nValid species names are:", paste(sort(names(spec)),sep="',\n'"))
         }
         dfile=gsub(" ","_",paste(x,".gaf.gz",sep=""))
         download.file(spec[[x]], destfile=dfile)
@@ -94,8 +95,46 @@ enr$gaf = function (x=NULL) {
     }
 }
 
-Hidden = function (x) {
-    return(x+1)
+#' \name{enr$new}
+#' \alias{enr_new}
+#' \alias{enr$new}
+#' \title{Initialize the annotation data }
+#' \description{
+#'   This function reads in the Gene Ontology annotation file. 
+#'   
+#' }
+#' \usage{ enr_new(gaffile=NULL) }
+#'
+#' \arguments{
+#'   \item{gaffile}{GO annotation filename which should be used to perform the 
+#'    enrichment analysis, if not given the last downloaded file, using the function `enr$gaf` is used, default: NULL }
+#' }
+#' \details{
+#'   This function allows you to initialize the annotation data which contain the mapping between
+#'   the GO ids and the gene ids for a given species.
+#' }
+#' \value{NULL}
+#' \examples{
+#' # get all species
+#' enr$gaf("Apis mellifera")
+#' enr$new()
+#' }
+#' 
+
+enr$new <- function (gaffile=NULL) {
+    self=enr
+    if (is.null(gaffile)) {
+        gaffile=self$annotation
+    }
+    godata=read.table(gaffile,comment.char="!",sep="\t",quote="")
+    godata=godata[,c(2,3,5,7)]
+    colnames(godata)=c("ID1","ID2","GOID","EvCode")
+    if (grepl("Apis.+mellif",gaffile)) {
+        godata$ID1=paste("LOC",godata$ID1,sep="")
+    }
+    self$data=list()
+    self$data$godata=godata
 }
 
 enr_gaf = enr$gaf
+enr_new = enr$new

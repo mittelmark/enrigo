@@ -1,7 +1,7 @@
 ---
 title: Vignette enrigo package
 author: Detlef Groth, University of Potsdam, Germany
-date: 2023-09-03 09:40
+date: 2023-09-03 12:38
 output: 
     rmarkdown::html_vignette:
         toc: true
@@ -228,4 +228,12 @@ object.
 sort(names(enr$gaf()))
 ```
 
+
+We can as well display all species and filenames in a table:
+
+```{r results="asis"}
+tab=do.call(rbind,enr$gaf())
+colnames(tab)[1]="URL"
+knitr::kable(tab)
+```
 

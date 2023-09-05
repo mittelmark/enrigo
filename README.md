@@ -180,5 +180,8 @@ License: MIT License see the file [LICENSE](LICENSE) for details.
 
 ## Bug reporting
 
-In case of bugs and suggestions, use the [issues](https://github.com/mittelmark/enrigo/issues) link on top.
+In      case      of      bugs       and       suggestions,       use      the
+[issues](https://github.com/mittelmark/enrigo/issues) link on top.
+
+
 

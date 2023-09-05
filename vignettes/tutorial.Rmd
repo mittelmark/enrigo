@@ -1,7 +1,7 @@
 ---
 title: Vignette enrigo package
 author: Detlef Groth, University of Potsdam, Germany
-date: 2023-09-04 21:23
+date: 2023-09-05 06:08
 output: 
     rmarkdown::html_vignette:
         toc: true
@@ -28,6 +28,11 @@ object which allows you to work with the information provided in gene ontology
 files in the Obo file format and the `enr` object  which uses the  information
 in so called gene ontology association files (gaf), files containing a mapping
 between gene identifiers and GO identifiers.
+
+If you are only interested how to actually perform the enrichment analysis you
+should jump to the section [enrichment](#enrichment).
+
+![](`r goutil$kroki('GO:0003676')`)![](`r goutil$kroki('GO:0003676')`)
 
 # goutil object
 
@@ -214,6 +219,8 @@ knitr::kable(goutil$getStats(),
 
 Now a short review of the functions available by the `enr` object.
 
+## Initialization
+
 There is as well here a download  function  which  allows you to download  the
 Gene Ontology annotation files (GAF) either from the GO website - 
 [https://geneontology.org/docs/download-go-annotations/](https://geneontology.org/docs/download-go-annotations/)
@@ -237,6 +244,8 @@ colnames(tab)[1]="URL"
 knitr::kable(tab)
 ```
 
+<a name="enrichment"> </a>
+
 ## Enrichment analysis
 
 Let's now perform an enrichment  analysis for GO terms. Usually we have a list
@@ -245,6 +254,7 @@ conditions.  Often we would like to group these  changed,  often  up-regulated
 genes and for this  purpose GO terms can be used. We are  interested  which GO
 terms  appear in this list of  (possibly  up-regulated)  genes more often than
 expected by chance, i.e. they are enriched. 
+
 
 
 So for the enrichment analysis we need a list of genes, one is the list of all

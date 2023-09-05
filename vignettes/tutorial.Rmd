@@ -1,7 +1,7 @@
 ---
 title: Vignette enrigo package
 author: Detlef Groth, University of Potsdam, Germany
-date: 2023-09-05 06:08
+date: 2023-09-05 06:22
 output: 
     rmarkdown::html_vignette:
         toc: true
@@ -31,8 +31,6 @@ between gene identifiers and GO identifiers.
 
 If you are only interested how to actually perform the enrichment analysis you
 should jump to the section [enrichment](#enrichment).
-
-![](`r goutil$kroki('GO:0003676')`)![](`r goutil$kroki('GO:0003676')`)
 
 # goutil object
 

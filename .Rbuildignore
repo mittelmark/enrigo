@@ -3,3 +3,7 @@
 ^\.\.Rcheck$
 ^\.Rbuildignore~$
 ^Makefile$
+gz$
+RDS$
+obo$
+download.html

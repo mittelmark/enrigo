@@ -4,6 +4,8 @@ Enrichment analysis for Gene Ontology terms.
 
 ## Functions
 
+### goutil object
+
 Currently the following functions are implemented for the `goutil` object::
 
 
@@ -25,6 +27,15 @@ Currently the following functions are implemented for the `goutil` object::
 - `goutil$isParent` - check if a given GO id is a direct parent of a given child id
 - `goutil$kroki` - create a GO tree graph using the kroki webservie
 - `goutil$quickGO` - create a GO tree graph using the EBI QuickGO webservie
+
+Here  an  example  output  of  the  `goutil$kroki`  function  for  plotting  the  GO id
+GO:0003796:
+
+<img                                                                          
+src="https://user-images.githubusercontent.com/75636/267664578-1e6d8616-3273-4d27-97dc-fe6886b12a6c.png"
+width="300px" />
+
+### enr - object
 
 And  here  the  methods  for the `enr`  object  with  which  you  perform  the
 enrichment analysis using GAF files (incomplete):
@@ -80,6 +91,10 @@ The  `enr$enrichment`  function will create a table with columns  representing
 the GO  terms,  the  p-values  for over or under  representation,  statistical
 measures  like effect sizes,  adjusted  p-values etc. For more details look at
 the package vignette.
+
+Here you see an example for such an analysis with its output:
+
+![](https://user-images.githubusercontent.com/75636/267664568-12978062-64ea-4c6f-9fdb-76200e22dbde.png)
 
 ## Supported Species
 

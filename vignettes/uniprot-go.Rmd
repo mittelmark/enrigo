@@ -1,0 +1,59 @@
+---
+title: Using the  enrigo package with UniProt data
+author: Detlef Groth, University of Potsdam, Germany
+date: 2023-09-30 11:11
+output: 
+    rmarkdown::html_vignette:
+        toc: true
+vignette: >
+  %\VignetteIndexEntry{Using the  enrigo package with UniProt data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+include-before: |
+    <style> 
+    body { max-width: 1000px; font-family: Candara, sans-serif;} 
+    table { min-width: 400px; border-spacing: 5px;  border-collapse: collapse; }
+    </style>
+---
+
+```{r echo=FALSE,results="hide"}
+library(knitr)
+```
+
+# Introduction
+
+This tutorial shows an example  analysis if you do not have GO annotations for
+your  sequences  but only  homolog  mappings to species  which  should have GO
+annotations for instance in the UniProt database.
+
+In our toy  example we assume that we have  mappings  between the genes of our
+species  and human  Ensembl  genes. We can  retrieve  the GO  annotations  for
+instance from the manually curated part of the UniProt database, the SwissProt
+database.  We can  therefore  extract GO  annotation  data from the  SwissProt
+database. 
+
+## Data preparation
+
+For this we download the compressed database from this website 
+[https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/taxonomic_divisions/](https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/taxonomic_divisions/).
+For human genes, we assume that we have Ensembl gene  identifiers  we download
+here                                  the                                 file
+[https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/taxonomic_divisions/uniprot_sprot_human.dat.gz](https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/taxonomic_divisions/uniprot_sprot_human.dat.gz).
+
+From this file we then  extract the mappings  between the UniProt  identifiers
+and the GO identifiers using the function `uniprot$id2go` like this: 
+
+
+```{r}
+library(enrigo)
+file=uniprot$download("mammals", 
+   folder=file.path(path.expand("~"),"data"))
+print(file)
+### this data extraction can take up to a few minutes
+id2go=file.path(path.expand("~"),"data","id2go.tab")
+uniprot$id2go(file,id2go)
+### let'ss check what is in this file
+id2godata=read.table(id2go,sep="\t")
+head(id2godata)
+```
+

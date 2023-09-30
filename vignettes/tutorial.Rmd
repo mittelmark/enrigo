@@ -1,7 +1,7 @@
 ---
 title: Vignette enrigo package
 author: Detlef Groth, University of Potsdam, Germany
-date: 2023-09-05 06:22
+date: 2023-09-30 11:14
 output: 
     rmarkdown::html_vignette:
         toc: true
@@ -53,9 +53,10 @@ library(enrigo)
 getwd()
 list.files()
 list.files("..")
-goutil$download(2020,quiet=TRUE)
-goutil$download(2023,quiet=TRUE)
-list.files()
+folder=file.path(path.expand("~"),"data")
+goutil$download(2020,folder=folder,quiet=TRUE)
+goutil$download(2023,folder=folder,quiet=TRUE)
+list.files(folder)
 ```
 
 After your  downloaded  the file you can initialize  your `goutil` object with
@@ -67,7 +68,7 @@ caches the parsing result in an RDS file in parallel to the Obo file.
 ```{r}
 ### measure the processing time
 t1=Sys.time()
-goutil$new("2023-01-01-go.obo")
+goutil$new(file.path(folder,"2023-01-01-go.obo"))
 print(Sys.time()-t1)
 list.files()
 ```
@@ -77,7 +78,7 @@ be used in subsequence initializations, thus saving processing time.
 
 ```{r}
 t1=Sys.time()
-goutil$new("2023-01-01-go.obo")
+goutil$new(file.path(folder,"2023-01-01-go.obo"))
 print(Sys.time()-t1)
 ```
 

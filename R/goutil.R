@@ -199,10 +199,11 @@ goutil$read.obofile <- function (obofile) {
 #' \description{
 #'   This function is used to download the Obo file for the given year from the gene ontology side.
 #' }
-#' \usage{ goutil_download(version,...) }
+#' \usage{ goutil_download(version,folder=NULL,...) }
 #'
 #' \arguments{
 #'   \item{version}{ Either such as 2005 or higher or character string for a version name like "2023-01-01" }
+#'   \item{folder}{data folder where theGO obo data files should be stored, if not given, the current working directory is used, default: NULL}
 #'   \item{\ldots}{Other arguments delegated to the function download.file}
 #' }
 #' \details{
@@ -210,11 +211,12 @@ goutil$read.obofile <- function (obofile) {
 #' }
 #' \value{filename of the downloaded file}
 #' \examples{
-#' obofile=goutil$download(2022)
+#' obofile=goutil$download(2022,
+#' folder=file.path(path.expand("~"),"data"))
 #' }
 #' 
 
-goutil$download <- function (version,...) {
+goutil$download <- function (version,folder=NULL,...) {
     # versions from 2005-2023 are supperted
     if (is.numeric(version)) {
         if (version == 2022) {
@@ -231,14 +233,25 @@ goutil$download <- function (version,...) {
     }
     ## http://release.geneontology.org/2005-01-01/ontology/go.obo
     dfile=paste(version,"-go.obo",sep="")
+    if (!is.null(folder)) {
+        if (!dir.exists(folder)) {
+            dir.create(folder,recursive=TRUE)
+        }
+        outpath=file.path(folder,dfile)
+    } else {
+        outpath=file.path(getwd(),dfile)
+    } 
+    if (file.exists(outpath)) {
+        return(outpath)
+    }
     if (grepl("^2019",version) | grepl("^202",version)) {
         download.file(paste("http://release.geneontology.org/",version,"/ontology/go.obo",sep=""),
-                      destfile=dfile,...)
+                      destfile=outpath,...)
     } else {
         download.file(paste("http://release.geneontology.org/",version,"/ontology/gene_ontology.obo",sep=""),
-                      destfile=dfile,...)
+                      destfile=outpath,...)
     }
-    return(dfile)
+    return(outpath)
 }
 
 #' \name{goutil$altid2new}

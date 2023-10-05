@@ -144,18 +144,19 @@ enr$new <- function (gaffile=NULL) {
 #'   This function takes two gene lists and performs a enrichment analysis.
 #'   
 #' }
-#' \usage{ enr_enrichment(fullset,subset) }
+#' \usage{ enr_enrichment(fullset,subset,mapping=NULL) }
 #'
 #' \arguments{
 #'   \item{fullset}{full set of genes}
 #'   \item{subset}{subset of genes, for instance these ones which are upregulated}
+#'   \item{mapping}{mapping file for any enrichment analysis, must contain a column id and a column gene, if not given GO enrichment is done}
 #' }
 #' \details{
 #'   This function performs the actual enrichment analysus.
 #' }
 #' \value{data frame with the following columns 
 #' \itemize{
-#' \item go_id - the GO id
+#' \item go_id - the GO id 
 #' \item total - number of all genes from the given fullset found in the annotation file belonging to this GO id
 #' \item ntotal - number of all genes from the given fullset found in the annotation file annotation file not belonging to this GO id
 #' \item set - number of all genes from the given subset found in the annotation file belonging to this GO id
@@ -194,10 +195,26 @@ enr$new <- function (gaffile=NULL) {
 #' table(tfslim)
 #' enr=cbind(df,p_slim=tfslim)
 #' head(df,20)
+#' ## term enrichment for your own terms
+#' set.seed(123)
+#' terms=sprintf("TRM\%03i",1:10)
+#' head(terms)
+#' genes=sprintf("GEN\%03i",1:50)
+#' head(genes)
+#' df=data.frame(gene=c(),term=c())
+#' for (g in genes) { 
+#'    x=sample(1:5,1); 
+#'    df=rbind(df,data.frame(gene=rep(g,x),term=sample(terms,x)))
+#'  }
+#' head(df)
+#' # enrich term TRM001 for demo purposes
+#' idx=which(df[,'term'] == "TRM001")
+#' idx=idx[1:(length(idx)-2)] 
+#' ##enr$enrichment(unique(df$gene), unique(df$gene[c(1:6,idx)]),df)
 #' }
 #' 
 
-enr$enrichment <- function (fullset,subset) {
+enr$enrichment <- function (fullset,subset,mapping=NULL) {
     cohensW = function (x,p=NULL) {
         if (is.table(x) | is.matrix(x)) {
             tab=x
@@ -224,20 +241,6 @@ enr$enrichment <- function (fullset,subset) {
             return(w)
         }
     }
-    fullset=unique(enr$symbol2loc(fullset))
-    idx1=which(enr$data$godata$ID1 %in% fullset)
-    subset=unique(enr$symbol2loc(subset))
-    godata1=enr$data$godata[idx1,c('ID1','GOID')]
-    idx3=which(enr$data$godata$ID1 %in% subset)
-    #print(length(idx))
-    godata2=enr$data$godata[idx3,c('ID1','GOID')]
-    godata1$GOID = goutil$altid2new(godata1$GOID)
-    godata2$GOID = goutil$altid2new(godata2$GOID)
-    CA = length(unique(godata1$ID1))
-    #how many go ids are in the list
-    DA = length(unique(godata2$ID1))
-    owarn=options("warn")[[1]]
-    options(warn=-1)
     df = data.frame(go_id = as.character(c()),
                     total  = as.numeric(c()),
                     ntotal  = as.numeric(c()),
@@ -247,40 +250,93 @@ enr$enrichment <- function (fullset,subset) {
                     residuals = as.numeric(c()),
                     cohens_w = as.numeric(c())
                     )
-    for (go in unique(godata2$GOID)) {
-        #how many genes have this GO annotation is in the file
-        A = length(unique(godata1[godata1$GOID == go,'ID1']))
-        #how many times, this GO is in the given geneIds list
-        B = length(unique(godata2[godata2$GOID == go,'ID1']))
-        C=CA-A
-        D=DA-B 
-        #how many genes are not annotated with this GO in the gaf file
-        mat=matrix(c(A,B,C,D) , ncol=2,byrow=TRUE)
-        
-        pval = fisher.test(mat)$p.value
-        res = chisq.test(mat)$residuals[1,2]
-        cohW = cohensW(mat)
-        total = A
-        set   = B
-        df = rbind(df, 
-                   data.frame(
-                              go_id = go,
-                              total  = A,
-                              ntotal = C,
-                              set    = B,
-                              nset   = D,
-                              p_value = pval,
-                              residuals = res,
-                              cohens_w = cohW)
-                   )
-      # sort the data frame base on the cohens_w
-   }
-   df = df[order(df$cohens_w, decreasing = TRUE),]
-   df=cbind(df,fdr=p.adjust(df$p_value,method="BH"))
-   names     = goutil$getName(df$go_id)
-   df=cbind(df,go_name=names)
-   options(warn=owarn)
-   return(df)
+    if (is.data.frame(mapping) | is.matrix(mapping)) {
+        # total number of genes
+        # some genes might be not in mapping
+        fmapping = mapping[mapping[,'gene'] %in% fullset,]
+        smapping = mapping[mapping[,'gene'] %in% subset,]
+        CA = length(unique(fmapping[,'gene']))
+        DA = length(unique(smapping[,'gene']))
+        owarn=options("warn")[[1]]
+        options(warn=-1)
+        for (term in unique(fmapping[,'term'])) {
+            # A how many genes in the fullset have this annotation
+            A = length(unique(fmapping[fmapping[,'term'] == term,'gene']))
+            # B how many genes in the subset have this annotation
+            B = length(unique(smapping[smapping[,'term'] == term,'gene']))
+            C=CA-A
+            D=DA-B 
+            #how many genes are not annotated with this GO in the gaf file
+            mat=matrix(c(A,B,C,D) , ncol=2,byrow=TRUE)
+            
+            pval = fisher.test(mat)$p.value
+            res = chisq.test(mat)$residuals[1,2]
+            cohW = cohensW(mat)
+            total = A
+            set   = B
+            df = rbind(df, 
+                       data.frame(
+                                  go_id = term,
+                                  total  = A,
+                                  ntotal = C,
+                                  set    = B,
+                                  nset   = D,
+                                  p_value = pval,
+                                  residuals = res,
+                                  cohens_w = cohW)
+                       )
+        }
+            
+    } else {
+        fullset=unique(enr$symbol2loc(fullset))
+        idx1=which(enr$data$godata$ID1 %in% fullset)
+        subset=unique(enr$symbol2loc(subset))
+        godata1=enr$data$godata[idx1,c('ID1','GOID')]
+        idx3=which(enr$data$godata$ID1 %in% subset)
+        #print(length(idx))
+        godata2=enr$data$godata[idx3,c('ID1','GOID')]
+        godata1$GOID = goutil$altid2new(godata1$GOID)
+        godata2$GOID = goutil$altid2new(godata2$GOID)
+        CA = length(unique(godata1$ID1))
+        #how many go ids are in the list
+        DA = length(unique(godata2$ID1))
+        owarn=options("warn")[[1]]
+        options(warn=-1)
+        for (go in unique(godata2$GOID)) {
+            #how many genes have this GO annotation is in the file
+            A = length(unique(godata1[godata1$GOID == go,'ID1']))
+            #how many times, this GO is in the given geneIds list
+            B = length(unique(godata2[godata2$GOID == go,'ID1']))
+            C=CA-A
+            D=DA-B 
+            #how many genes are not annotated with this GO in the gaf file
+            mat=matrix(c(A,B,C,D) , ncol=2,byrow=TRUE)
+            
+            pval = fisher.test(mat)$p.value
+            res = chisq.test(mat)$residuals[1,2]
+            cohW = cohensW(mat)
+            total = A
+            set   = B
+            df = rbind(df, 
+                       data.frame(
+                                  go_id = go,
+                                  total  = A,
+                                  ntotal = C,
+                                  set    = B,
+                                  nset   = D,
+                                  p_value = pval,
+                                  residuals = res,
+                                  cohens_w = cohW)
+                       )
+        }
+        names     = goutil$getName(df$go_id)
+        df=cbind(df,go_name=names)
+    }
+    # sort the data frame base on the cohens_w
+    df = df[order(df$cohens_w, decreasing = TRUE),]
+    df=cbind(df,fdr=p.adjust(df$p_value,method="BH"))
+    options(warn=owarn)
+    return(df)
 }  
 
 #' \name{enr$symbol2loc}
@@ -324,7 +380,48 @@ enr$symbol2loc <- function (symbol) {
     }
 }
 
+#' \name{enr$name2id}
+#' \alias{enr_name2id}
+#' \alias{enr$name2id}
+#' \title{Convert names into identifiers}
+#' \description{
+#'   This function takes a vector of text strings, may be as well with duplicates
+#'   and converts them into identifiers.#'   identifiers and returns a vector of gene indentifiers based on the GO
+#' }
+#' \usage{ enr_name2id(x,pattern="TM\%04i") }
+#'
+#' \arguments{
+#'   \item{x}{vector of text strings}
+#'   \item{pattern}{the id pattern which should be used to create the identifiers using sprintf, default: 'TM\%04i'}
+#' }
+#' \details{
+#'   This function allows you to create unique identifiers for text strings.
+#' }
+#' \value{data frame with the columns id and and name, where the latter are the given text strings}
+#' \examples{
+#' # get all species
+#' enr$name2id(c("hello","world","dummy","hello"))
+#' }
+#' 
+
+enr$name2id <- function (x,pattern="TM%04i") {
+    k=1
+    res=list()
+    df=data.frame(term=c(),name=c())
+    for (i in x) {
+        if (is.null(res[[i]])) {
+            term=sprintf(pattern,k)
+            res[[i]]=term
+            k=k+1
+        } else {
+            term=res[[i]]
+        }
+        df=rbind(df,data.frame(id=term,name=i))
+    }
+    return(df)
+}
 enr_enrichment = enr$enrichment
-enr_gaf = enr$gaf
-enr_new = enr$new
+enr_gaf        = enr$gaf
+enr_new        = enr$new
 enr_symbol2loc = enr$symbol2loc
+enr_name2id    = enr$name2id

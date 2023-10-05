@@ -6,18 +6,19 @@
   This function takes two gene lists and performs a enrichment analysis. 
    
 } 
-\usage{ enr_enrichment(fullset,subset) } 
+\usage{ enr_enrichment(fullset,subset,mapping=NULL) } 
  
 \arguments{ 
   \item{fullset}{full set of genes} 
   \item{subset}{subset of genes, for instance these ones which are upregulated} 
+  \item{mapping}{mapping file for any enrichment analysis, must contain a column id and a column gene, if not given GO enrichment is done} 
 } 
 \details{ 
   This function performs the actual enrichment analysus. 
 } 
 \value{data frame with the following columns  
 \itemize{ 
-\item go_id - the GO id 
+\item go_id - the GO id  
 \item total - number of all genes from the given fullset found in the annotation file belonging to this GO id 
 \item ntotal - number of all genes from the given fullset found in the annotation file annotation file not belonging to this GO id 
 \item set - number of all genes from the given subset found in the annotation file belonging to this GO id 
@@ -56,5 +57,21 @@ tfslim[df$go_id \%in\% slims]=TRUE
 table(tfslim) 
 enr=cbind(df,p_slim=tfslim) 
 head(df,20) 
+## term enrichment for your own terms 
+set.seed(123) 
+terms=sprintf("TRM\%03i",1:10) 
+head(terms) 
+genes=sprintf("GEN\%03i",1:50) 
+head(genes) 
+df=data.frame(gene=c(),term=c()) 
+for (g in genes) {  
+   x=sample(1:5,1);  
+   df=rbind(df,data.frame(gene=rep(g,x),term=sample(terms,x))) 
+ } 
+head(df) 
+# enrich term TRM001 for demo purposes 
+idx=which(df[,'term'] == "TRM001") 
+idx=idx[1:(length(idx)-2)]  
+##enr$enrichment(unique(df$gene), unique(df$gene[c(1:6,idx)]),df) 
 } 
  

@@ -1,7 +1,7 @@
 ---
 title: Vignette enrigo package
 author: Detlef Groth, University of Potsdam, Germany
-date: 2023-09-30 11:14
+date: 2023-10-05 09:59
 output: 
     rmarkdown::html_vignette:
         toc: true
@@ -354,3 +354,51 @@ enr=cbind(df,p_slim=tfslim)
 ### just show slim GO's
 enr[enr$p_slim==TRUE,]
 ```
+
+## Non-GO enrichment analysis
+
+Often you have to perform enrichment  analysis using other  vocabularies.  The
+enrigo  package as well supports that type of analysis. What you need is a set
+of genes, the list of all genes in your  analysis  (fullset)  the subset which
+you would like to check for enrichments (subset) and a mapping data frame which maps
+your gene ids to some terms. 
+
+Let's create some example data to demonstrate such type of analysis:
+
+```{r}
+set.seed(123)
+terms=sprintf("TRM%03i",1:10)
+head(terms)
+genes=sprintf("GEN%03i",1:50)
+head(genes)
+mapping=data.frame(gene=c(),term=c())
+for (g in genes) { 
+   x=sample(1:5,1); 
+   mapping=rbind(mapping,data.frame(gene=rep(g,x),term=sample(terms,x)))
+}
+head(mapping)
+```
+
+We create now a subset which is enriched for the term "TRM001".
+
+```{r}
+fullset=unique(mapping$gene)
+head(fullset)
+idx=which(mapping[,'term']== "TRM001")
+idx=idx[1:(length(idx)-2)] 
+subset=unique(mapping$gene[idx])
+head(subset)
+length(fullset)
+length(subset)
+```
+
+Having  these two sets and the  mapping  we can then  perform  our  enrichment
+analysis:
+
+```{r eval=FALSE}
+enr$enrichment(fullset,subset,mapping)
+```
+
+
+
+

@@ -9,7 +9,7 @@ of genes against a full list of genes from the same organism.
 \section{Methods}{ 
 \itemize{ 
 \item \code{\link[enrigo:enr_gaf]{enr$gaf()}}{query, download or initialize a Gene Ontology association file} 
-\item \code{\link[enrigo:enr_dowmload]{enr$download(species)}}{dowmload an annotation file for the given species} 
+\item \code{\link[enrigo:enr_download]{enr$download(species)}}{dowmload an annotation file for the given species} 
 \item \code{\link[enrigo:enr_new]{enr$new(filename)}}{initialize the GO annotation} 
 \item \code{\link[enrigo:enr_annotation]{enr$annotation(genes)}}{return GO annotations for the given gene identifiers} 
 \item \code{\link[enrigo:enr_enrichment]{enr$enrichment(fullset,subset)}}{perform an enrichment analysis} 

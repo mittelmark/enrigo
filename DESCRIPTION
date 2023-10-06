@@ -1,8 +1,8 @@
 Package: enrigo
 Type: Package
 Title: Gene ontology term enrichment analysis for a given gene list 
-Version: 0.1.0
-Date: 2023-09-03 
+Version: 0.1.1
+Date: 2023-10-06 
 Author: Detlef Groth, University of Potsdam, Germany
 Maintainer: Detlef Groth <dgroth@uni-potsdam.de>
 Description: R package for performing Gene Ontology term enrichment analysis.

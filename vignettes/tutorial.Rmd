@@ -1,7 +1,7 @@
 ---
 title: Vignette enrigo package
 author: Detlef Groth, University of Potsdam, Germany
-date: 2023-10-05 09:59
+date: 2023-10-05 12:47
 output: 
     rmarkdown::html_vignette:
         toc: true
@@ -350,9 +350,9 @@ tfslim=rep(FALSE,nrow(df))
 tfslim[df$go_id %in% slims]=TRUE
 table(tfslim)
 ### attached slim information
-enr=cbind(df,p_slim=tfslim)
+df=cbind(df,p_slim=tfslim)
 ### just show slim GO's
-enr[enr$p_slim==TRUE,]
+df[df$p_slim==TRUE,]
 ```
 
 ## Non-GO enrichment analysis
@@ -385,8 +385,9 @@ We create now a subset which is enriched for the term "TRM001".
 fullset=unique(mapping$gene)
 head(fullset)
 idx=which(mapping[,'term']== "TRM001")
-idx=idx[1:(length(idx)-2)] 
-subset=unique(mapping$gene[idx])
+idx=idx[1:(length(idx)-3)] 
+idx2=sample(1:length(mapping$gene),5) #5additional ones
+subset=unique(mapping$gene[c(idx,idx2)])
 head(subset)
 length(fullset)
 length(subset)
@@ -395,7 +396,7 @@ length(subset)
 Having  these two sets and the  mapping  we can then  perform  our  enrichment
 analysis:
 
-```{r eval=FALSE}
+```{r}
 enr$enrichment(fullset,subset,mapping)
 ```
 

@@ -15,14 +15,15 @@
 } 
 \details{ 
   This function allows you to download your annotation file which contains the mapping between 
-  the GO ids and the gene ids for a given species. For getting a list of available species and for the  
-  download a internet connection is required. 
+  the GO ids and the gene ids for a given species. 
+  This function together with the function enr$new allows you to do the same thing as with the enr$gaf  
+  function but the approach first, download and get a filename then intialize with this file is probably more transparent for the user. 
 } 
-\value{local filename, invisible} 
+\value{local filename} 
 \examples{ 
 # get all species 
 fname=enr$download("Apis mellifera",folder=file.path(path.expand("~"),"data")) 
-enr$new(fname) 
 fname 
+enr$new(fname) 
 } 
  

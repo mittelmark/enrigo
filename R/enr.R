@@ -9,7 +9,12 @@
 #' }
 #' \section{Methods}{
 #' \itemize{
-#' \item \code{\link[enrigo:enr_gaf]{enr$gaf(filename)}}{query, download or initialize a Gene Ontology association file}
+#' \item \code{\link[enrigo:enr_gaf]{enr$gaf()}}{query, download or initialize a Gene Ontology association file}
+#' \item \code{\link[enrigo:enr_download]{enr$download(species)}}{dowmload an annotation file for the given species}
+#' \item \code{\link[enrigo:enr_new]{enr$new(filename)}}{initialize the GO annotation}
+#' \item \code{\link[enrigo:enr_annotation]{enr$annotation(genes)}}{return GO annotations for the given gene identifiers}
+#' \item \code{\link[enrigo:enr_enrichment]{enr$enrichment(fullset,subset)}}{perform an enrichment analysis}
+#' \item \code{\link[enrigo:enr_symbol2loc]{enr$symbol2loc(symbol)}}{convert gene esymbols into LOC identifiers}
 #' }
 #' }
 #' \examples{
@@ -29,11 +34,12 @@ enr=new.env()
 #'   This function setups the Gene Ontology Annotation file. 
 #'   
 #' }
-#' \usage{ enr_gaf(x=NULL) }
+#' \usage{ enr_gaf(x=NULL,folder=NULL) }
 #'
 #' \arguments{
 #'   \item{x}{ The filename or a species name for the file which should be used to perform the 
 #'    enrichment analysis, if the file does not exists it can be download, if no filename is given all available species are listed, default: NULL }
+#'   \item{folder}{the data folder where the annotation files should be stored, if not given, the current working directory is used, default: NULL}
 #' }
 #' \details{
 #'   This function allows you to intialize your annotation file which contains the mapping between
@@ -45,14 +51,17 @@ enr=new.env()
 #' # get all species
 #' res=enr$gaf()
 #' sort(names(res))
+#' enr$gaf("Apis mellifera",folder=file.path(path.expand("~"),"data"))
 #' }
 #' 
 
-enr$gaf = function (x=NULL) {
+enr$gaf = function (x=NULL,folder=NULL) {
     if (is.null(x)) {
         # check which species are available
-        download.file("http://current.geneontology.org/products/pages/downloads.html","download.html")
-        fin  = file("download.html", "r")
+        if (!file.exists("download-go.html") || substr(file.mtime("download-go.html"),1,10) != substr(Sys.Date(),1,10)) {
+            download.file("http://current.geneontology.org/products/pages/downloads.html","download-go.html")
+        } 
+        fin  = file("download-go.html", "r")
         spec=list()
         while(length((line = readLines(fin,n=1)))>0) {
             if (grepl("<b>[A-Z][a-z]+ [a-z]+</b>",line)) {
@@ -64,8 +73,10 @@ enr$gaf = function (x=NULL) {
             }
         }
         close(fin)
-        download.file("https://data.elsiklab.missouri.edu/downloads/hgd/HGD-GO-Annotation/gaf/","download.html")
-        fin  = file("download.html", "r")
+        if (!file.exists("download-hgd.html") || substr(file.mtime("download-hgd.html"),1,10) != substr(Sys.Date(),1,10)) {
+            download.file("https://data.elsiklab.missouri.edu/downloads/hgd/HGD-GO-Annotation/gaf/","download-hgd.html")
+        }
+        fin  = file("download-hgd.html", "r")
         while(length((line = readLines(fin,n=1)))>0) {
             if (grepl("<a href=\".+HGD_go_annotation.gaf.gz",line)) {
                 s=gsub("_"," ",gsub(".+<a href=\"(.+?)_HGD.+","\\1",line))
@@ -78,29 +89,76 @@ enr$gaf = function (x=NULL) {
         return(spec)
     } else if (!grepl(".gaf",x) & !grepl(".gaf.gz",x)) {
         # must be a species
-        spec=enr$gaf()
-        if (!x %in% names(spec)) {
-            stop("Error: Given species is not available!\nValid species names are:", paste(sort(names(spec)),sep="',\n'"))
-        }
-        dfile=gsub(" ","_",paste(x,".gaf.gz",sep=""))
-        download.file(spec[[x]], destfile=dfile)
-        enr$annotation=dfile
+        dfile=enr$download(x)
+        enr$new()
+        invisible(enr$.annotation)
     } else  if (!file.exists(x)) {
         stop(paste("Error: file",x,"does not exists!"))
-    } else if (grepl(".gaf",x)) {
-        enr$annotation=x
-        invisible(enr$annotion)
+    } else if (grepl(".gaf$",x)) {
+        enr$.annotation=x
+        enr$new()
+        invisible(enr$.annotation)
     } else {
         stop("Invalid filename or species, filenames must end with gaf or gaf.gz")
     }
 }
 
+#' \name{enr$download}
+#' \alias{enr_download}
+#' \alias{enr$download}
+#' \title{Download a Gene Ontology annotation file for the given species}
+#' \description{
+#'   This function downloads a Gene Ontology Annotation file. 
+#' }
+#' \usage{ enr_download(x,folder=NULL) }
+#'
+#' \arguments{
+#'   \item{x}{species name for the file which should be used to perform the 
+#'    enrichment analysis, if the file does not already on your harddisk or if the file is not from the current month it is be download, default: NULL
+#'   if no filename is given all available species are listed, default: NULL }
+#'   \item{folder}{the data folder where the annotation files should be stored, if not given, the current working directory is used, default: NULL}
+#' }
+#' \details{
+#'   This function allows you to download your annotation file which contains the mapping between
+#'   the GO ids and the gene ids for a given species. For getting a list of available species and for the 
+#'   download a internet connection is required.
+#' }
+#' \value{local filename, invisible}
+#' \examples{
+#' # get all species
+#' fname=enr$download("Apis mellifera",folder=file.path(path.expand("~"),"data"))
+#' enr$new(fname)
+#' fname
+#' }
+#' 
+
+enr$download <- function (x,folder=NULL) {
+    spec=enr$gaf()
+    if (!x %in% names(spec)) {
+        stop("Error: Given species is not available!\nValid species names are:", paste(sort(names(spec)),sep="',\n'"))
+    }
+    dfile=gsub(" ","_",paste(x,".gaf.gz",sep=""))
+    if (!is.null(folder)) {
+        if (!dir.exists(folder)) {
+            dir.create(folder,recursive=TRUE)
+        }
+        dfile=file.path(folder,dfile)
+    } else {
+        dfile=file.path(getwd(),dfile)
+    } 
+    if (!file.exists(dfile) || substr(file.mtime(dfile),1,7) != substr(Sys.Date(),1,7)) {
+        download.file(spec[[x]], destfile=dfile)
+    }
+    enr$.annotation=dfile
+    return(dfile)
+}
+
 #' \name{enr$new}
 #' \alias{enr_new}
 #' \alias{enr$new}
-#' \title{Initialize the annotation data }
+#' \title{Initialize the annotation data for a given file}
 #' \description{
-#'   This function reads in the Gene Ontology annotation file. 
+#'   This function reads in a Gene Ontology annotation file. 
 #'   
 #' }
 #' \usage{ enr_new(gaffile=NULL) }
@@ -115,20 +173,21 @@ enr$gaf = function (x=NULL) {
 #' }
 #' \value{NULL}
 #' \examples{
-#' # get all species
-#' enr$gaf("Apis mellifera")
-#' enr$new()
+#' apisfile=enr$gaf("Apis mellifera",folder=file.path(path.expand("~"),"data"))
+#' cerafile=enr$gaf("Apis cerana",folder=file.path(path.expand("~"),"data"))
+#' enr$new(cerafile)
 #' }
 #' 
 
 enr$new <- function (gaffile=NULL) {
     self=enr
     if (is.null(gaffile)) {
-        gaffile=self$annotation
+        gaffile=self$.annotation
     }
     godata=read.table(gaffile,comment.char="!",sep="\t",quote="")
     godata=godata[,c(2,3,5,7)]
     colnames(godata)=c("ID1","ID2","GOID","EvCode")
+    ## TODO: check for LOC identifiers and add them if neccessary
     if (grepl("Apis.+mellif",gaffile)) {
         godata$ID1=paste("LOC",godata$ID1,sep="")
     }
@@ -144,12 +203,13 @@ enr$new <- function (gaffile=NULL) {
 #'   This function takes two gene lists and performs a enrichment analysis.
 #'   
 #' }
-#' \usage{ enr_enrichment(fullset,subset,mapping=NULL) }
+#' \usage{ enr_enrichment(fullset,subset,mapping=NULL,max.genes=5) }
 #'
 #' \arguments{
 #'   \item{fullset}{full set of genes}
 #'   \item{subset}{subset of genes, for instance these ones which are upregulated}
 #'   \item{mapping}{mapping file for any enrichment analysis, must contain a column id and a column gene, if not given GO enrichment is done}
+#'   \item{max.genes}{maximal number of gene identifiers attached into the result table, default: 5}
 #' }
 #' \details{
 #'   This function performs the actual enrichment analysus.
@@ -170,7 +230,6 @@ enr$new <- function (gaffile=NULL) {
 #' fname=goutil$download(2022)
 #' goutil$new(fname)
 #' enr$gaf("Apis mellifera")
-#' enr$new()
 #' fullset=sample(unique(enr$data$godata$ID1),80)
 #' ## some symbols
 #' fullset=c(fullset,sample(unique(enr$data$godata$ID2),10))
@@ -193,7 +252,7 @@ enr$new <- function (gaffile=NULL) {
 #' tfslim=rep(FALSE,nrow(df))
 #' tfslim[df$go_id \%in\% slims]=TRUE
 #' table(tfslim)
-#' enr=cbind(df,p_slim=tfslim)
+#' df=cbind(df,p_slim=tfslim)
 #' head(df,20)
 #' ## term enrichment for your own terms
 #' set.seed(123)
@@ -210,11 +269,11 @@ enr$new <- function (gaffile=NULL) {
 #' # enrich term TRM001 for demo purposes
 #' idx=which(df[,'term'] == "TRM001")
 #' idx=idx[1:(length(idx)-2)] 
-#' ##enr$enrichment(unique(df$gene), unique(df$gene[c(1:6,idx)]),df)
+#' enr$enrichment(unique(df$gene), unique(df$gene[c(1:6,idx)]),df)
 #' }
 #' 
 
-enr$enrichment <- function (fullset,subset,mapping=NULL) {
+enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5) {
     cohensW = function (x,p=NULL) {
         if (is.table(x) | is.matrix(x)) {
             tab=x
@@ -248,8 +307,8 @@ enr$enrichment <- function (fullset,subset,mapping=NULL) {
                     nset    = as.numeric(c()),
                     p_value = as.numeric(c()),
                     residuals = as.numeric(c()),
-                    cohens_w = as.numeric(c())
-                    )
+                    cohens_w = as.numeric(c()),
+                    genes    = as.character(c()))
     if (is.data.frame(mapping) | is.matrix(mapping)) {
         # total number of genes
         # some genes might be not in mapping
@@ -259,11 +318,13 @@ enr$enrichment <- function (fullset,subset,mapping=NULL) {
         DA = length(unique(smapping[,'gene']))
         owarn=options("warn")[[1]]
         options(warn=-1)
+        df=list()
         for (term in unique(fmapping[,'term'])) {
             # A how many genes in the fullset have this annotation
             A = length(unique(fmapping[fmapping[,'term'] == term,'gene']))
             # B how many genes in the subset have this annotation
-            B = length(unique(smapping[smapping[,'term'] == term,'gene']))
+            genes=unique(smapping[smapping[,'term'] == term,'gene'])
+            B = length(genes)
             C=CA-A
             D=DA-B 
             #how many genes are not annotated with this GO in the gaf file
@@ -274,8 +335,12 @@ enr$enrichment <- function (fullset,subset,mapping=NULL) {
             cohW = cohensW(mat)
             total = A
             set   = B
-            df = rbind(df, 
-                       data.frame(
+            if (B > max.genes) {
+                genes=paste(paste(genes[1:max.genes],collapse=", "),", ...")
+            } else {
+                genes=paste(paste(genes,collapse=", "))
+            }
+            df[[term]]=data.frame(
                                   go_id = term,
                                   total  = A,
                                   ntotal = C,
@@ -283,9 +348,10 @@ enr$enrichment <- function (fullset,subset,mapping=NULL) {
                                   nset   = D,
                                   p_value = pval,
                                   residuals = res,
-                                  cohens_w = cohW)
-                       )
-        }
+                                  cohens_w = cohW,
+                                  genes=genes)
+         }
+         df=do.call(rbind,df)
             
     } else {
         fullset=unique(enr$symbol2loc(fullset))
@@ -302,11 +368,19 @@ enr$enrichment <- function (fullset,subset,mapping=NULL) {
         DA = length(unique(godata2$ID1))
         owarn=options("warn")[[1]]
         options(warn=-1)
+        df=list()
         for (go in unique(godata2$GOID)) {
             #how many genes have this GO annotation is in the file
             A = length(unique(godata1[godata1$GOID == go,'ID1']))
             #how many times, this GO is in the given geneIds list
-            B = length(unique(godata2[godata2$GOID == go,'ID1']))
+            genes=unique(godata2[godata2$GOID == go,'ID1'])
+            B = length(genes)
+            if (B > max.genes) {
+                genes=paste(paste(genes[1:max.genes],collapse=", "),", ...")
+            } else {
+                genes=paste(paste(genes,collapse=", "))
+            }
+
             C=CA-A
             D=DA-B 
             #how many genes are not annotated with this GO in the gaf file
@@ -317,8 +391,7 @@ enr$enrichment <- function (fullset,subset,mapping=NULL) {
             cohW = cohensW(mat)
             total = A
             set   = B
-            df = rbind(df, 
-                       data.frame(
+            df[[go]] = data.frame(
                                   go_id = go,
                                   total  = A,
                                   ntotal = C,
@@ -326,11 +399,15 @@ enr$enrichment <- function (fullset,subset,mapping=NULL) {
                                   nset   = D,
                                   p_value = pval,
                                   residuals = res,
-                                  cohens_w = cohW)
-                       )
+                                  cohens_w = cohW,
+                                  genes=genes)
+
+            #df = rbind(df, )
         }
+        df=do.call(rbind,df)
         names     = goutil$getName(df$go_id)
         df=cbind(df,go_name=names)
+        df=cbind(df,go_nsp=goutil$getNamespace(df$go_id))
     }
     # sort the data frame base on the cohens_w
     df = df[order(df$cohens_w, decreasing = TRUE),]
@@ -359,8 +436,7 @@ enr$enrichment <- function (fullset,subset,mapping=NULL) {
 #' \value{vector of NCBI gene identifiers, LOC values}
 #' \examples{
 #' # get all species
-#' enr$gaf("Apis mellifera")
-#' enr$new()
+#' enr$gaf("Apis mellifera", folder=file.path(path.expand("~"),"data"))
 #' enr$symbol2loc(c('Lys-3','Dbp80',
 #'   'LOC727025','LOC102653920','Dummy1'))
 #' }
@@ -386,7 +462,7 @@ enr$symbol2loc <- function (symbol) {
 #' \title{Convert names into identifiers}
 #' \description{
 #'   This function takes a vector of text strings, may be as well with duplicates
-#'   and converts them into identifiers.#'   identifiers and returns a vector of gene indentifiers based on the GO
+#'   and converts them into identifiers.
 #' }
 #' \usage{ enr_name2id(x,pattern="TM\%04i") }
 #'
@@ -399,7 +475,7 @@ enr$symbol2loc <- function (symbol) {
 #' }
 #' \value{data frame with the columns id and and name, where the latter are the given text strings}
 #' \examples{
-#' # get all species
+#' # convert some terms into unique identifiers
 #' enr$name2id(c("hello","world","dummy","hello"))
 #' }
 #' 
@@ -420,8 +496,60 @@ enr$name2id <- function (x,pattern="TM%04i") {
     }
     return(df)
 }
+
+#' \name{enr$annotation}
+#' \alias{enr_annotation}
+#' \alias{enr$annotation}
+#' \title{Extract GO annotations for the given genes}
+#' \description{
+#'   This function takes a vector of gene indentifiers and extracts for them the annotations
+#'   from the current GAF file.
+#' }
+#' \usage{ enr_annotation(x) }
+#'
+#' \arguments{
+#'   \item{x}{vector of gene identifiers}
+#' }
+#' \details{
+#'   This function allows you investigate for a given set of genes what are the available annotations.
+#' }
+#' \value{data frame with the columns from the annotation file, you can add yourself the GO names as shown in the example}
+#' \examples{
+#' enr$gaf("Apis mellifera")
+#' anno=enr$annotation(c("LOC102653920","LOC725343","DUMMY"))
+#' head(anno)
+#' fname=goutil$download(2022)
+#' 
+#' goutil$new(fname)
+#' anno=cbind(anno,go_name=goutil$getName(anno$go_id))
+#' head(anno)
+#' }
+#' 
+
+enr$annotation <- function (x) {
+    self=enr
+    if (is.null(self$.annotation)) {
+        stop("Error: You must first initialize your annotations with the enr$gaf method!")
+    }
+    df=data.frame(gene_id = x) 
+    godata=read.table(self$.annotation,comment.char="!",sep="\t",quote="")
+    godata=godata[,c(1,2,3,5,6,7,8)]
+    colnames(godata)=c("db","id1","id2","go_id","ref","ev_code","nsp")
+    if (any(grepl("LOC",x))) {
+        godata$id1 = paste("LOC",godata$id1,sep="")
+    }
+    m1=merge(df,godata,by.x="gene_id",by.y="id1",all.x=TRUE)
+    m1=m1[,c("gene_id","db","go_id","ref","ev_code","nsp")]
+    m2=merge(df,godata,by.x="gene_id",by.y="id2",all.x=TRUE)
+    m2=m2[,c("gene_id","db","go_id","ref","ev_code","nsp")]
+    df=unique(rbind(m1,m2))
+    return(df)
+}
+
+enr_annotation = enr$annotation
+enr_download   = enr$download
 enr_enrichment = enr$enrichment
 enr_gaf        = enr$gaf
+enr_name2id    = enr$name2id
 enr_new        = enr$new
 enr_symbol2loc = enr$symbol2loc
-enr_name2id    = enr$name2id

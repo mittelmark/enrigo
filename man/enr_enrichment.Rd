@@ -6,12 +6,13 @@
   This function takes two gene lists and performs a enrichment analysis. 
    
 } 
-\usage{ enr_enrichment(fullset,subset,mapping=NULL) } 
+\usage{ enr_enrichment(fullset,subset,mapping=NULL,max.genes=5) } 
  
 \arguments{ 
   \item{fullset}{full set of genes} 
   \item{subset}{subset of genes, for instance these ones which are upregulated} 
   \item{mapping}{mapping file for any enrichment analysis, must contain a column id and a column gene, if not given GO enrichment is done} 
+  \item{max.genes}{maximal number of gene identifiers attached into the result table, default: 5} 
 } 
 \details{ 
   This function performs the actual enrichment analysus. 
@@ -32,7 +33,6 @@
 fname=goutil$download(2022) 
 goutil$new(fname) 
 enr$gaf("Apis mellifera") 
-enr$new() 
 fullset=sample(unique(enr$data$godata$ID1),80) 
 ## some symbols 
 fullset=c(fullset,sample(unique(enr$data$godata$ID2),10)) 
@@ -55,7 +55,7 @@ length(slims)
 tfslim=rep(FALSE,nrow(df)) 
 tfslim[df$go_id \%in\% slims]=TRUE 
 table(tfslim) 
-enr=cbind(df,p_slim=tfslim) 
+df=cbind(df,p_slim=tfslim) 
 head(df,20) 
 ## term enrichment for your own terms 
 set.seed(123) 
@@ -72,6 +72,6 @@ head(df)
 # enrich term TRM001 for demo purposes 
 idx=which(df[,'term'] == "TRM001") 
 idx=idx[1:(length(idx)-2)]  
-##enr$enrichment(unique(df$gene), unique(df$gene[c(1:6,idx)]),df) 
+enr$enrichment(unique(df$gene), unique(df$gene[c(1:6,idx)]),df) 
 } 
  

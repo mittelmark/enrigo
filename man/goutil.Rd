@@ -10,6 +10,7 @@ annotations. Enrichment analysis for gene lists and graphical visualizations are
 \itemize{ 
 \item \code{\link[enrigo:goutil_new]{goutil$new}}{initialize the required GO data using the given obo file} 
 \item \code{\link[enrigo:goutil_altid2new]{goutil$altid2new}}{convert old alternative GO ids to their new counterpart} 
+\item \code{\link[enrigo:goutil_download]{goutil$download}}{download GO obo files to your local file system} 
 \item \code{\link[enrigo:goutil_getChildren]{goutil$getChildren}}{get the child nodes of a given GO id} 
 \item \code{\link[enrigo:goutil_getEntry]{goutil$getEntry}}{get the GO entry in standard text for a given GO id} 
 \item \code{\link[enrigo:goutil_getName]{goutil$getName}}{get the name of (a) given GO ids} 

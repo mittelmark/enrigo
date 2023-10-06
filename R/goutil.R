@@ -11,6 +11,7 @@
 #' \itemize{
 #' \item \code{\link[enrigo:goutil_new]{goutil$new}}{initialize the required GO data using the given obo file}
 #' \item \code{\link[enrigo:goutil_altid2new]{goutil$altid2new}}{convert old alternative GO ids to their new counterpart}
+#' \item \code{\link[enrigo:goutil_download]{goutil$download}}{download GO obo files to your local file system}
 #' \item \code{\link[enrigo:goutil_getChildren]{goutil$getChildren}}{get the child nodes of a given GO id}
 #' \item \code{\link[enrigo:goutil_getEntry]{goutil$getEntry}}{get the GO entry in standard text for a given GO id}
 #' \item \code{\link[enrigo:goutil_getName]{goutil$getName}}{get the name of (a) given GO ids}
@@ -199,15 +200,16 @@ goutil$read.obofile <- function (obofile) {
 #' \description{
 #'   This function is used to download the Obo file for the given year from the gene ontology side.
 #' }
-#' \usage{ goutil_download(version,folder=NULL,...) }
+#' \usage{ goutil_download(version,timeout=600,folder=NULL,...) }
 #'
 #' \arguments{
-#'   \item{version}{ Either such as 2005 or higher or character string for a version name like "2023-01-01" }
+#'   \item{version}{either number such as 2005 or higher or character string for a version name like "2023-01-01" }
+#'   \item{timeout}{allowed timeout in seconds how long the download might need, large downloads might take a long, time, default: 600}
 #'   \item{folder}{data folder where theGO obo data files should be stored, if not given, the current working directory is used, default: NULL}
 #'   \item{\ldots}{Other arguments delegated to the function download.file}
 #' }
 #' \details{
-#'   This function downloads the GO obofile from the Gene Ontolofy website.
+#'   This function downloads the GO obofile from the Gene Ontology website.
 #' }
 #' \value{filename of the downloaded file}
 #' \examples{
@@ -216,7 +218,8 @@ goutil$read.obofile <- function (obofile) {
 #' }
 #' 
 
-goutil$download <- function (version,folder=NULL,...) {
+goutil$download <- function (version,timeout=600,folder=NULL,...) {
+    
     # versions from 2005-2023 are supperted
     if (is.numeric(version)) {
         if (version == 2022) {
@@ -244,6 +247,8 @@ goutil$download <- function (version,folder=NULL,...) {
     if (file.exists(outpath)) {
         return(outpath)
     }
+    to=options()$timeout
+    options(timeout=timeout)
     if (grepl("^2019",version) | grepl("^202",version)) {
         download.file(paste("http://release.geneontology.org/",version,"/ontology/go.obo",sep=""),
                       destfile=outpath,...)
@@ -251,6 +256,7 @@ goutil$download <- function (version,folder=NULL,...) {
         download.file(paste("http://release.geneontology.org/",version,"/ontology/gene_ontology.obo",sep=""),
                       destfile=outpath,...)
     }
+    options(timeout=to)
     return(outpath)
 }
 
@@ -364,14 +370,14 @@ goutil$getName <- function (goid) {
         stop("Please read in first GO obo file using goutil$new")
     }
     if (length(goid)==1) {
-        name=self$godata$names$name[self$godata$names$id==goid]
+        name=self$godata$names$name[which(self$godata$names$id==goid)]
         if (identical(name,character(0))) {
             return(NA)
         } else {
             return(name)
         }
     } else {
-        return(unlist(lapply(goid,goutil$getName)))
+        return(unlist(lapply(goid,self$getName)))
     }
 }
 
@@ -406,8 +412,8 @@ goutil$getNamespace <- function (goid) {
         stop("Please read in first GO obo file using goutil$new")
     }
     if (length(goid)==1) {
-        nsp=self$godata$names$nsp[self$godata$names$id==goid]
-        if (is.null(nsp)) {
+        nsp=self$godata$names$nsp[which(self$godata$names$id==goid)]
+        if (identical(nsp,character(0))) {
             return(NA)
         } else {
             return(nsp)
@@ -441,7 +447,7 @@ goutil$getChildren <- function (goid) {
     if (length(self$godata)==0) {
         stop("Please read in first GO obo file using goutil$new")
     }
-    return(self$godata$tree$child[self$godata$tree$parent==goid])
+    return(self$godata$tree$child[which(self$godata$tree$parent==goid)])
 }
 
 #' \name{goutil$getParent}
@@ -477,11 +483,11 @@ goutil$getParent <- function (goid,type="all") {
         stop("Please read in first GO obo file using goutil$new")
     }
     if (type=="all") {
-        return(self$godata$tree$parent[self$godata$tree$child == goid])
+        return(self$godata$tree$parent[which(self$godata$tree$child == goid)])
     } else if (type == "part_of") {
-        return(self$godata$tree$parent[self$godata$tree$child == goid & self$godata$tree$relation=="part_of"])
+        return(self$godata$tree$parent[which(self$godata$tree$child == goid & self$godata$tree$relation=="part_of")])
     } else if (type == "is_a") {
-        return(self$godata$tree$parent[self$godata$tree$child == goid & self$godata$tree$relation=="is_a"])
+        return(self$godata$tree$parent[which(self$godata$tree$child == goid & self$godata$tree$relation=="is_a")])
     } else {
         stop("Error: Unknown type, must be either 'all', 'part_of' or 'is_a'!")
     }

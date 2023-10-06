@@ -18,8 +18,7 @@
 \value{vector of NCBI gene identifiers, LOC values} 
 \examples{ 
 # get all species 
-enr$gaf("Apis mellifera") 
-enr$new() 
+enr$gaf("Apis mellifera", folder=file.path(path.expand("~"),"data")) 
 enr$symbol2loc(c('Lys-3','Dbp80', 
   'LOC727025','LOC102653920','Dummy1')) 
 } 

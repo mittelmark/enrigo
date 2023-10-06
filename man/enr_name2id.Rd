@@ -4,7 +4,7 @@
 \title{Convert names into identifiers} 
 \description{ 
   This function takes a vector of text strings, may be as well with duplicates 
-  and converts them into identifiers.#'   identifiers and returns a vector of gene indentifiers based on the GO 
+  and converts them into identifiers. 
 } 
 \usage{ enr_name2id(x,pattern="TM\%04i") } 
  
@@ -17,7 +17,7 @@
 } 
 \value{data frame with the columns id and and name, where the latter are the given text strings} 
 \examples{ 
-# get all species 
+# convert some terms into unique identifiers 
 enr$name2id(c("hello","world","dummy","hello")) 
 } 
  

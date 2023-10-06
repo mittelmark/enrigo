@@ -1,9 +1,9 @@
 \name{enr$new} 
 \alias{enr_new} 
 \alias{enr$new} 
-\title{Initialize the annotation data } 
+\title{Initialize the annotation data for a given file} 
 \description{ 
-  This function reads in the Gene Ontology annotation file.  
+  This function reads in a Gene Ontology annotation file.  
    
 } 
 \usage{ enr_new(gaffile=NULL) } 
@@ -18,8 +18,8 @@
 } 
 \value{NULL} 
 \examples{ 
-# get all species 
-enr$gaf("Apis mellifera") 
-enr$new() 
+apisfile=enr$gaf("Apis mellifera",folder=file.path(path.expand("~"),"data")) 
+cerafile=enr$gaf("Apis cerana",folder=file.path(path.expand("~"),"data")) 
+enr$new(cerafile) 
 } 
  

@@ -9,11 +9,12 @@
 #' }
 #' \section{Methods}{
 #' \itemize{
+#' \item \code{\link[enrigo:enr_annotation]{enr$annotation(genes)}}{return GO annotations for the given gene identifiers}
+#' \item \code{\link[enrigo:enr_enrichment]{enr$enrichment(fullset,subset)}}{perform an enrichment analysis}
 #' \item \code{\link[enrigo:enr_gaf]{enr$gaf()}}{query, download or initialize a Gene Ontology association file}
 #' \item \code{\link[enrigo:enr_download]{enr$download(species)}}{dowmload an annotation file for the given species}
 #' \item \code{\link[enrigo:enr_new]{enr$new(filename)}}{initialize the GO annotation}
-#' \item \code{\link[enrigo:enr_annotation]{enr$annotation(genes)}}{return GO annotations for the given gene identifiers}
-#' \item \code{\link[enrigo:enr_enrichment]{enr$enrichment(fullset,subset)}}{perform an enrichment analysis}
+#' \item \code{\link[enrigo:enr_name2id]{enr$name2id(names)}}{convert free text terms into identifiers}
 #' \item \code{\link[enrigo:enr_symbol2loc]{enr$symbol2loc(symbol)}}{convert gene esymbols into LOC identifiers}
 #' }
 #' }
@@ -313,6 +314,7 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5) {
     if (is.data.frame(mapping) | is.matrix(mapping)) {
         # total number of genes
         # some genes might be not in mapping
+        colnames(mapping)=gsub("_id","",colnames(mapping))
         fmapping = mapping[mapping[,'gene'] %in% fullset,]
         smapping = mapping[mapping[,'gene'] %in% subset,]
         CA = length(unique(fmapping[,'gene']))

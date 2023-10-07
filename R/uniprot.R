@@ -118,12 +118,13 @@ uniprot$id2go <- function (infile, outfile) {
             fin  = file(infile, "r")
         }
         fout = file(outfile,'w')
+        cat("uniprot_id\tgo_id\tgo_nsp\tgo_name\tev_code\n",file=fout)
         while(length((line = readLines(fin,n=1)))>0) {
             if (substr(line,1,2)=='ID') {
                 id = gsub("^ID\\s+([A-Z0-9_a-z]+).+","\\1",line)
             }  else if (substr(line,1,8) == "DR   GO;") {
                 out=gsub("^DR   GO; (GO:[0-9]+); (.):([^;]+); ([A-Z]{2,3}).+","\t\\1\t\\2\t\\3\t\\4",line)
-                cat(id,out,"\n",file=fout)            
+                cat(id,out,"\n",sep="",file=fout)            
             }
         }
         close(fin)
@@ -157,6 +158,7 @@ uniprot$id2go <- function (infile, outfile) {
 #' head(read.table(id2ensgfile,sep="\t",quote=""))
 #' }
 #' 
+
 uniprot$id2ensg <- function (infile, outfile) {
     if (!(file.exists(outfile) & file.mtime(outfile)>file.mtime(infile))) {
         # only do processing if file does not exists
@@ -173,11 +175,15 @@ uniprot$id2ensg <- function (infile, outfile) {
                 id = gsub("^ID\\s+([A-Z0-9a-z_]+).+","\\1",line)
             }  else if (substr(line,1,13) == "DR   Ensembl;") {
                 out=gsub("^DR   Ensembl;.+; (ENS.*G[0-9]+)\\..*","\t\\1",line)
-                cat(id,out,"\n",file=fout)            
+                cat(id,out,"\n",sep="",file=fout)            
             }
         }
         close(fin)
         close(fout)
+        tab=read.table(outfile)
+        tab=unique(tab)
+        colnames(tab)=c("uniprot_id","gene_id")
+        write.table(tab,file=outfile,sep="\t",quote=FALSE,row.names=FALSE)
     }
 }
 
@@ -214,11 +220,11 @@ uniprot$id2ensg <- function (infile, outfile) {
 
 uniprot$mapid2go <- function (upid2gofile,idfile,outfile,evidence="ALL") { 
     id2go=read.table(upid2gofile,sep="\t",quote="");
-    colnames(id2go)=c("ID","GO_ID","GO_NAMESPACE","GO_NAME","EVIDENCE")
+    colnames(id2go)=c("uniprot_id","go_id","go_nsp","go_name","ev_code")
         
     upid2id=read.table(idfile,sep="\t")
-    colnames(upid2id)=c("ID","ID_EXTERN")
-    upid2id$ID_EXTERN=trimws(upid2id$ID_EXTERN)
+    colnames(upid2id)=c("uniprot_id","extern_id")
+    upid2id$extern_id=trimws(upid2id$extern_id)
     res=merge(id2go,upid2id)
     write.table(res,file=outfile,sep="\t",quote=FALSE)
 }

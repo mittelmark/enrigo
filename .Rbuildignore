@@ -7,3 +7,6 @@ gz$
 RDS$
 obo$
 download.html
+crc2gene.tab
+id2term.tab
+term2crc.tab

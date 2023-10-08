@@ -419,6 +419,79 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5) {
     return(df)
 }  
 
+#' \name{enr$enrichment_ensembl}
+#' \alias{enr_enrichment_ensembl}
+#' \alias{enr$enrichment_ensembl}
+#' \title{Perform a enrichment analyzes for the given subset gene lists based on Ensembl genes}
+#' \description{
+#'   This function takes a list of Ensembl gene identifiers which are checked for possible term enrichments.
+#'   The fullset is here taken from the Uniprot/Swissprot database
+#' }
+#' \usage{ enr_enrichment_ensembl(subset, max.genes=5, mapping=NULL, folder=file.path(path.expand("~"),"data")) }
+#'
+#' \arguments{
+#'   \item{subset}{subset of genes, for instance these ones which are upregulated in case of non-human
+#'    genes you must submit human Ensembl genes homologous to them}
+#'   \item{max.genes}{maximal number of gene identifiers attached into the result table, default: 5}
+#'   \item{mapping}{mapping file for any enrichment analysis, must contain a column id and a column gene, if not given GO enrichment is done}
+#'   \item{folder}{the data folder where to store intermediate results}
+#' }
+#' \details{
+#'   This function performs an enrichment analysis based on human Ensembl gene identifiers,
+#'   if you have non-human genes you should submit the human genes which are homologous to your species genes.
+#' }
+#' \value{data frame with the following columns 
+#' \itemize{
+#' \item go_id - the GO or term id 
+#' \item total - number of all genes from the given fullset found in the annotation file belonging to this GO id
+#' \item ntotal - number of all genes from the given fullset found in the annotation file annotation file not belonging to this GO id
+#' \item set - number of all genes from the given subset found in the annotation file belonging to this GO id
+#' \item nset - number of all genes from the given subset found in the annotation file not belonging to this GO id
+#' \item p_value - the raw p-value of the fisher test
+#' \item residuals - the pearson residuals for the contigency table
+#' \item cohens_w - the effect size Cohen-s w for the contingency table
+#' }
+#' }
+#' \examples{
+#' genes=read.table(text="ENSG00000102057
+#' ENSG00000258659
+#' ENSG00000184206
+#' ENSG00000184345
+#' ENSG00000153684
+#' ENSG00000278662
+#' ENSG00000183629
+#' ENSG00000125520")
+#' head(genes[,1])
+#' enr$enrichment_ensembl(genes)
+#' }
+#' 
+
+enr$enrichment_ensembl <- function (subset,max.genes=5,mapping=NULL,folder=file.path(path.expand("~"),"data")) {
+   year=as.integer(substr(Sys.Date(),1,4))-1
+   dfolder     = folder
+   upfile      = uniprot$download("human",folder=dfolder)
+   id2gofile   = file.path(dfolder,"humanid2go.tab")
+   ensg2gofile = file.path(dfolder,"ensg2go.tab")
+   if (is.character(mapping)) {
+       mappingfile=mapping
+   } else {
+       mappingfile = file.path(dfolder,"mapping.tab")
+   }
+   uniprot$id2go(upfile,id2gofile)   
+   uniprot$id2ensg(upfile,ensg2gofile)
+   ensg2go=read.table(ensg2gofile,sep="\t")
+   colnames(ensg2go)=c("up_id","ensg_id")
+   uniprot$mapid2go(id2gofile,ensg2gofile,mappingfile)
+   mapping=read.table(mappingfile,sep="\t",quote="",header=TRUE)
+   fullset=unique(ensg2go$ensg_id)
+   map=mapping[,c('go_id','extern_id')]
+   colnames(map)=c("term","gene")
+   enrich=enr$enrichment(fullset,subset,map,max.genes=max.genes)
+   goutil$new(goutil$download(year,folder=dfolder))
+   enrich=cbind(enrich,go_nsp=goutil$getNamespace(enrich$go_id),go_name=goutil$getName(enrich$go_id))
+   return(enrich)
+}
+
 #' \name{enr$symbol2loc}
 #' \alias{enr_symbol2loc}
 #' \alias{enr$symbol2loc}
@@ -552,7 +625,13 @@ enr$annotation <- function (x) {
 enr_annotation = enr$annotation
 enr_download   = enr$download
 enr_enrichment = enr$enrichment
+enr_enrichment_ensembl = enr$enrichment_ensembl
 enr_gaf        = enr$gaf
 enr_name2id    = enr$name2id
 enr_new        = enr$new
 enr_symbol2loc = enr$symbol2loc
+
+
+## Private functions
+
+

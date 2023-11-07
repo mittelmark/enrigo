@@ -205,16 +205,20 @@ enr$new <- function (gaffile=NULL) {
 #'   This function takes two gene lists and performs a enrichment analysis.
 #'   
 #' }
-#' \usage{ enr_enrichment(fullset,subset,mapping=NULL,max.genes=5) }
+#' \usage{ enr_enrichment(fullset,subset,mapping=NULL,max.genes=5,derichment=FALSE) }
 #'
 #' \arguments{
 #'   \item{fullset}{full set of genes}
 #'   \item{subset}{subset of genes, for instance these ones which are upregulated}
 #'   \item{mapping}{mapping file for any enrichment analysis, must contain a column id and a column gene, if not given GO enrichment is done}
 #'   \item{max.genes}{maximal number of gene identifiers attached into the result table, default: 5}
+#'   \item{derichment}{should as well a de-richment analysis performed, default: FALSE}
 #' }
 #' \details{
-#'   This function performs the actual enrichment analysus.
+#'   This function performs the actual enrichment analysis.
+#'   In case the option  `derichment` is set to TRUE (default), all genes of the fullset
+#'   will be checked for enrichment and derichment, if this is FALSE only the GO's
+#'   of the subset will be checked.
 #' }
 #' \value{data frame with the following columns 
 #' \itemize{
@@ -275,7 +279,7 @@ enr$new <- function (gaffile=NULL) {
 #' }
 #' 
 
-enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5) {
+enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5,derichment=FALSE) {
     cohensW = function (x,p=NULL) {
         if (is.table(x) | is.matrix(x)) {
             tab=x
@@ -322,7 +326,12 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5) {
         owarn=options("warn")[[1]]
         options(warn=-1)
         df=list()
-        for (term in unique(fmapping[,'term'])) {
+        if (derichment) {
+            terms = unique(fmapping[,'term'])
+        } else {
+            terms = unique(smapping[,'term'])
+        }
+        for (term in terms) {
             # A how many genes in the fullset have this annotation
             A = length(unique(fmapping[fmapping[,'term'] == term,'gene']))
             # B how many genes in the subset have this annotation
@@ -356,7 +365,7 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5) {
          }
          df=do.call(rbind,df)
             
-    } else {
+     } else {
         fullset=unique(enr$symbol2loc(fullset))
         idx1=which(enr$data$godata$ID1 %in% fullset)
         subset=unique(enr$symbol2loc(subset))
@@ -372,7 +381,12 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5) {
         owarn=options("warn")[[1]]
         options(warn=-1)
         df=list()
-        for (go in unique(godata2$GOID)) {
+        if (derichment) {
+            terms = unique(godata1$GOID)
+        } else {
+            terms = unique(godata2$GOID)
+        }
+        for (go in terms) {
             #how many genes have this GO annotation is in the file
             A = length(unique(godata1[godata1$GOID == go,'ID1']))
             #how many times, this GO is in the given geneIds list
@@ -462,7 +476,7 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5) {
 #' ENSG00000183629
 #' ENSG00000125520")
 #' head(genes[,1])
-#' enr$enrichment_ensembl(genes)
+#' enr$enrichment_ensembl(genes[,1])
 #' }
 #' 
 

@@ -1,7 +1,7 @@
 ---
 title: Vignette enrigo package
 author: Detlef Groth, University of Potsdam, Germany
-date: 2023-10-05 12:47
+date: 2023-11-07 16:42
 output: 
     rmarkdown::html_vignette:
         toc: true
@@ -337,6 +337,17 @@ df$go_name=gsub("(.{20})(.{3,})","\\1 ...",df$go_name)
 head(df)
 dim(df)
 ```
+
+We can as well restrict our search to a specific namespace to avoid a to strong reduction in the false discovery rate:
+
+
+```{r}
+df=enr$enrichment(fullset,subset,namespace="p")
+df$go_name=gsub("(.{20})(.{3,})","\\1 ...",df$go_name)
+head(df)
+dim(df)
+```
+
 
 Sometimes  we would  like to see not all GO terms, but only some major  terms.
 For this the so called  slim-subsets  can be used, here for  instance we could

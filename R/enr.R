@@ -205,7 +205,7 @@ enr$new <- function (gaffile=NULL) {
 #'   This function takes two gene lists and performs a enrichment analysis.
 #'   
 #' }
-#' \usage{ enr_enrichment(fullset,subset,mapping=NULL,max.genes=5,derichment=FALSE) }
+#' \usage{ enr_enrichment(fullset,subset,mapping=NULL,max.genes=5,derichment=FALSE, min.term=2,namespace="all") }
 #'
 #' \arguments{
 #'   \item{fullset}{full set of genes}
@@ -213,10 +213,12 @@ enr$new <- function (gaffile=NULL) {
 #'   \item{mapping}{mapping file for any enrichment analysis, must contain a column id and a column gene, if not given GO enrichment is done}
 #'   \item{max.genes}{maximal number of gene identifiers attached into the result table, default: 5}
 #'   \item{derichment}{should as well a de-richment analysis performed, default: FALSE}
+#'   \item{min.term}{minimal number which should a GO id or other terms should be present, default: 2}
+#'   \item{namespace}{which namespace terms should be checked, 'b','c','p' or 'all', default: 'all'}
 #' }
 #' \details{
 #'   This function performs the actual enrichment analysis.
-#'   In case the option  `derichment` is set to TRUE (default), all genes of the fullset
+#'   In case the option `derichment` is set to TRUE, all genes of the fullset
 #'   will be checked for enrichment and derichment, if this is FALSE only the GO's
 #'   of the subset will be checked.
 #' }
@@ -230,6 +232,7 @@ enr$new <- function (gaffile=NULL) {
 #' \item p_value - the raw p-value of the fisher test
 #' \item residuals - the pearson residuals for the contigency table
 #' \item cohens_w - the effect size Cohen-s w for the contingency table
+#' \item fdr - false discovery rate value, Benjamini-Hochberg adjusted p-values
 #' }
 #' }
 #' \examples{
@@ -279,7 +282,7 @@ enr$new <- function (gaffile=NULL) {
 #' }
 #' 
 
-enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5,derichment=FALSE) {
+enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5,derichment=FALSE,min.term=2,namespace="all") {
     cohensW = function (x,p=NULL) {
         if (is.table(x) | is.matrix(x)) {
             tab=x
@@ -331,6 +334,8 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5,derichment=F
         } else {
             terms = unique(smapping[,'term'])
         }
+        sterms=names(table(terms)>min.term)
+        terms=sterms
         for (term in terms) {
             # A how many genes in the fullset have this annotation
             A = length(unique(fmapping[fmapping[,'term'] == term,'gene']))
@@ -386,6 +391,12 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5,derichment=F
         } else {
             terms = unique(godata2$GOID)
         }
+        if(namespace %in% c('c','p','f')) {
+            nsp=goutil$getNamespace(terms)
+            terms=terms[nsp == namespace]
+        } else if (!namespace == "all") {
+            stop("Error: Wrong namespace,valid names are 'c','p','f' or 'all'!")
+        }
         for (go in terms) {
             #how many genes have this GO annotation is in the file
             A = length(unique(godata1[godata1$GOID == go,'ID1']))
@@ -428,6 +439,12 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5,derichment=F
     }
     # sort the data frame base on the cohens_w
     df = df[order(df$cohens_w, decreasing = TRUE),]
+    if (min.term>1) {
+        df=df[df$set>=min.term,]
+    } 
+    if(namespace !="all") {
+        df=df[df$go_nsp==namespace,]
+    }
     df=cbind(df,fdr=p.adjust(df$p_value,method="BH"))
     options(warn=owarn)
     return(df)

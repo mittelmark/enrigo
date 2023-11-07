@@ -41,6 +41,6 @@ ENSG00000278662
 ENSG00000183629 
 ENSG00000125520") 
 head(genes[,1]) 
-enr$enrichment_ensembl(genes) 
+enr$enrichment_ensembl(genes[,1]) 
 } 
  

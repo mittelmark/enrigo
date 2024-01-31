@@ -6,7 +6,7 @@
   This function takes two gene lists and performs a enrichment analysis. 
    
 } 
-\usage{ enr_enrichment(fullset,subset,mapping=NULL,max.genes=5,derichment=FALSE, min.term=2,namespace="all") } 
+\usage{ enr_enrichment(fullset,subset,mapping=NULL,max.genes=5, derichment=FALSE, min.term=2, namespace="all", alternative="greater")} 
  
 \arguments{ 
   \item{fullset}{full set of genes} 
@@ -16,12 +16,13 @@
   \item{derichment}{should as well a de-richment analysis performed, default: FALSE} 
   \item{min.term}{minimal number which should a GO id or other terms should be present, default: 2} 
   \item{namespace}{which namespace terms should be checked, 'b','c','p' or 'all', default: 'all'} 
+  \item{alternative}{should the fisher.test performed one-sided only ("greater", lower p-values in some cases) as only enrichement is checked ) or 'two.sided', , default: 'greater'} 
 } 
 \details{ 
   This function performs the actual enrichment analysis. 
   In case the option `derichment` is set to TRUE, all genes of the fullset 
   will be checked for enrichment and derichment, if this is FALSE only the GO's 
-  of the subset will be checked. 
+  of the subset will be checked. We recommend the adjustment method 'BY' as it takes into consideration that the GO terms are not independent from each other. 
 } 
 \value{data frame with the following columns  
 \itemize{ 
@@ -33,7 +34,6 @@
 \item p_value - the raw p-value of the fisher test 
 \item residuals - the pearson residuals for the contigency table 
 \item cohens_w - the effect size Cohen-s w for the contingency table 
-\item fdr - false discovery rate value, Benjamini-Hochberg adjusted p-values 
 } 
 } 
 \examples{ 

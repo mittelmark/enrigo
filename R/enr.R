@@ -95,7 +95,7 @@ enr$gaf = function (x=NULL,folder=NULL) {
         invisible(enr$.annotation)
     } else  if (!file.exists(x)) {
         stop(paste("Error: file",x,"does not exists!"))
-    } else if (grepl(".gaf$",x)) {
+    } else if (grepl(".gaf$",x) | grepl(".gaf.gz$",x)) {
         enr$.annotation=x
         enr$new()
         invisible(enr$.annotation)
@@ -205,7 +205,7 @@ enr$new <- function (gaffile=NULL) {
 #'   This function takes two gene lists and performs a enrichment analysis.
 #'   
 #' }
-#' \usage{ enr_enrichment(fullset,subset,mapping=NULL,max.genes=5,derichment=FALSE, min.term=2,namespace="all") }
+#' \usage{ enr_enrichment(fullset,subset,mapping=NULL,max.genes=5, derichment=FALSE, min.term=2, namespace="all", alternative="greater")}
 #'
 #' \arguments{
 #'   \item{fullset}{full set of genes}
@@ -214,13 +214,14 @@ enr$new <- function (gaffile=NULL) {
 #'   \item{max.genes}{maximal number of gene identifiers attached into the result table, default: 5}
 #'   \item{derichment}{should as well a de-richment analysis performed, default: FALSE}
 #'   \item{min.term}{minimal number which should a GO id or other terms should be present, default: 2}
-#'   \item{namespace}{which namespace terms should be checked, 'b','c','p' or 'all', default: 'all'}
+#'   \item{namespace}{which namespace terms should be checked, 'c','f','p' or 'all', default: 'all'}
+#'   \item{alternative}{should the fisher.test performed one-sided only ("greater", lower p-values in some cases) as only enrichement is checked ) or 'two.sided', , default: 'greater'}
 #' }
 #' \details{
 #'   This function performs the actual enrichment analysis.
 #'   In case the option `derichment` is set to TRUE, all genes of the fullset
 #'   will be checked for enrichment and derichment, if this is FALSE only the GO's
-#'   of the subset will be checked.
+#'   of the subset will be checked. We recommend the adjustment method 'BY' as it takes into consideration that the GO terms are not independent from each other.
 #' }
 #' \value{data frame with the following columns 
 #' \itemize{
@@ -232,7 +233,6 @@ enr$new <- function (gaffile=NULL) {
 #' \item p_value - the raw p-value of the fisher test
 #' \item residuals - the pearson residuals for the contigency table
 #' \item cohens_w - the effect size Cohen-s w for the contingency table
-#' \item fdr - false discovery rate value, Benjamini-Hochberg adjusted p-values
 #' }
 #' }
 #' \examples{
@@ -282,7 +282,7 @@ enr$new <- function (gaffile=NULL) {
 #' }
 #' 
 
-enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5,derichment=FALSE,min.term=2,namespace="all") {
+enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5,derichment=FALSE,min.term=2,namespace="all",alternative='greater') {
     cohensW = function (x,p=NULL) {
         if (is.table(x) | is.matrix(x)) {
             tab=x
@@ -318,6 +318,8 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5,derichment=F
                     residuals = as.numeric(c()),
                     cohens_w = as.numeric(c()),
                     genes    = as.character(c()))
+    alt=alternative
+
     if (is.data.frame(mapping) | is.matrix(mapping)) {
         # total number of genes
         # some genes might be not in mapping
@@ -345,10 +347,10 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5,derichment=F
             C=CA-A
             D=DA-B 
             #how many genes are not annotated with this GO in the gaf file
-            mat=matrix(c(A,B,C,D) , ncol=2,byrow=TRUE)
-            
-            pval = fisher.test(mat)$p.value
-            res = chisq.test(mat)$residuals[1,2]
+            mat=matrix(c(C,A,D,B) , ncol=2,byrow=TRUE)
+            #,
+            pval = fisher.test(mat,alternative=alt)$p.value
+            res = chisq.test(mat)$residuals[2,2]
             cohW = cohensW(mat)
             total = A
             set   = B
@@ -412,10 +414,9 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5,derichment=F
             C=CA-A
             D=DA-B 
             #how many genes are not annotated with this GO in the gaf file
-            mat=matrix(c(A,B,C,D) , ncol=2,byrow=TRUE)
-            
-            pval = fisher.test(mat)$p.value
-            res = chisq.test(mat)$residuals[1,2]
+            mat=matrix(c(C,A,D,B) , ncol=2,byrow=TRUE)
+            pval = fisher.test(mat,alternative=alt)$p.value
+            res = chisq.test(mat)$residuals[2,2]
             cohW = cohensW(mat)
             total = A
             set   = B
@@ -442,10 +443,12 @@ enr$enrichment <- function (fullset,subset,mapping=NULL,max.genes=5,derichment=F
     if (min.term>1) {
         df=df[df$set>=min.term,]
     } 
-    if(namespace !="all") {
+    if (namespace !="all") {
         df=df[df$go_nsp==namespace,]
     }
-    df=cbind(df,fdr=p.adjust(df$p_value,method="BH"))
+    # exlude negative residuals
+    df=df[df$residuals>0,]
+    df=cbind(df,fdr=p.adjust(df$p_value,method='BH'))
     options(warn=owarn)
     return(df)
 }  
@@ -653,6 +656,72 @@ enr$annotation <- function (x) {
     return(df)
 }
 
+#' \name{enr$lf2dex}
+#' \alias{enr_lf2dex}
+#' \alias{enr$lf2dex}
+#' \title{Create T/F table for a certain log-fold difference}
+#' \description{
+#'   Create a TRUE/FALSE data frame to indicate if the given two log-fold expressions
+#'   against a control for two different conditions are differentially expressed
+#' }
+#' \usage{ enr_lf2dex(x, threshold.control=1, threshold.groups=0.5) }
+#'
+#' \arguments{
+#'  \item{x}{a two column data frame with log-fold change values for two groups against a control}
+#'  \item{threshold.control}{the numerical threshold for the comparison against the control}, 
+#'  \item{threshold.groups}{the numerical threshold for the comparison between the groups}against the control, 
+#' }
+#' \details{
+#'   Usually such an analysis can be down using a simple check against a given
+#'   log-fold change against a control for instance, if log2 values are compared
+#'   data>1, however for the difference set between the two groups, it can happen
+#'   that one group has a log-fold change against the control, let's say of 1.3
+#'   and the the other group a value of 0.9 against the control. So between each
+#'   other they are not differentially expressed. The TRUE/FALSE value in this case
+#'   for a  simple check against > 1 would be TRUE (G1) against the control and 
+#'   FALSE (G2) against the control.
+#' }
+#' \value{data frame with two columns with tTRUE or FALSE values for both comparisons}
+#' \examples{
+#' sdata=data.frame(
+#' G1=c(1.2,1.2,1.6,1.2,0.8,-1.6,-1.2,-1.2,-0.1,-0.3,-0.8,0.4,-3.6,-2.6),
+#' G2=c(0.9,0.1,1.6,1.8,2.5,-1.4,-0.1,-0.3,-1.2,-1.2,-1.7,1.7,-1.4,-1.4))
+#' rownames(sdata)=LETTERS[1:14]
+#' sdata
+#' ## up-regulated
+#' sdata > 1
+#' enr$lf2dex(sdata,threshold.control =  1)
+#' ## down-regulated
+#' sdata < -1
+#' enr$lf2dex(sdata,threshold.control = -1)
+#' dex=enr$lf2dex(sdata,threshold.control =  1)
+#' table(dex[,1],dex[,2])
+#' enr$lf2dex(sdata,threshold.control =  1, threshold.groups=0.3)
+#' }
+#' 
+
+
+enr$lf2dex <- function (x,threshold.control=1, threshold.groups=0.5) {
+    data=x
+    # check difference set if it is different between group one and two
+    #  as well and not only against the control
+    if (threshold.control>0) {
+        tab1 = data > threshold.control
+
+        idx1 = tab1[,1] & !(tab1[,2]) & (data[,1]-data[,2] < threshold.groups)
+        tab1[idx1,1] = FALSE
+        idx2 = tab1[,2] & !(tab1[,1]) & (data[,2]-data[,1] < threshold.groups)
+        tab1[idx2,2] = FALSE
+    }
+    if (threshold.control < 0) {
+        tab1 = data < threshold.control
+        idx1 = tab1[,1] & !(tab1[,2]) & (data[,1]-data[,2] > threshold.groups)
+        tab1[idx1,1] = FALSE
+        idx2 = tab1[,2] & !(tab1[,1]) & (data[,2]-data[,1] > threshold.groups)
+        tab1[idx2,2] = FALSE
+    }
+    return(tab1)
+}
 enr_annotation = enr$annotation
 enr_download   = enr$download
 enr_enrichment = enr$enrichment
@@ -660,6 +729,7 @@ enr_enrichment_ensembl = enr$enrichment_ensembl
 enr_gaf        = enr$gaf
 enr_name2id    = enr$name2id
 enr_new        = enr$new
+enr_lf2dex     = enr$lf2dex
 enr_symbol2loc = enr$symbol2loc
 
 

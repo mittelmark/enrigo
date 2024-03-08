@@ -15,7 +15,7 @@
   \item{max.genes}{maximal number of gene identifiers attached into the result table, default: 5} 
   \item{derichment}{should as well a de-richment analysis performed, default: FALSE} 
   \item{min.term}{minimal number which should a GO id or other terms should be present, default: 2} 
-  \item{namespace}{which namespace terms should be checked, 'b','c','p' or 'all', default: 'all'} 
+  \item{namespace}{which namespace terms should be checked, 'c','f','p' or 'all', default: 'all'} 
   \item{alternative}{should the fisher.test performed one-sided only ("greater", lower p-values in some cases) as only enrichement is checked ) or 'two.sided', , default: 'greater'} 
 } 
 \details{ 

@@ -1,5 +1,6 @@
 exportPattern("^[[:lower:]]+")
 importFrom("utils", "download.file", "read.table", "write.table")
-importFrom("graphics", "par")
+importFrom("graphics", "par","lines", "polygon", "rect", "text")
 importFrom("stats", "chisq.test",
      "fisher.test", "p.adjust")
+importFrom("grDevices", "rgb")

@@ -1,3 +1,6 @@
-NEWS started
+## Changes
 
-and continued
+* 2024-03-08 
+
+- adding enr$vennplot
+- adding enr$topplot

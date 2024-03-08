@@ -1,7 +1,7 @@
 ---
 title: Vignette enrigo package
 author: Detlef Groth, University of Potsdam, Germany
-date: 2023-11-07 16:42
+date: 2024-03-08 11:44
 output: 
     rmarkdown::html_vignette:
         toc: true
@@ -52,8 +52,10 @@ files from January 2020 and 2023 for instance.
 library(enrigo)
 getwd()
 list.files()
-list.files("..")
-folder=file.path(path.expand("~"),"data")
+folder=file.path(path.expand("~"),"data","go-obo")
+if (dir.exists(folder)) {
+    dir.create(folder)
+}
 goutil$download(2020,folder=folder,quiet=TRUE)
 goutil$download(2023,folder=folder,quiet=TRUE)
 list.files(folder)
@@ -411,6 +413,51 @@ analysis:
 enr$enrichment(fullset,subset,mapping)
 ```
 
+# Plotting functions
+
+The package contains as well a few plotting functions usually used in gene expression and enrichment analysis.
+
+## enr$vennplot
+
+This is a function to visualize the common and distinct gene or gene ontology terms sets between two or free different groups.
+
+Here an example with two sets:
+
+```{r label=vennplot1,fig.width=6,fig.height=6}
+tab=data.frame(matrix(rnorm(100),ncol=2))
+colnames(tab)=c('A', 'B')
+tab=tab>0
+head(tab)
+table(tab[,1],tab[,2])
+enr$vennplot(tab)
+```
+
+And here one with three sets:
+
+```{r label=vennplot2,fig.width=4,fig.height=4}
+par(mai=rep(0.0,4))
+tab=cbind(tab,C=rnorm(50)>0)
+head(tab)
+ftable(tab[,1],tab[,2],tab[,3])
+enr$vennplot(tab)
+```
+
+## enr$topplot
 
 
+Often  we  would  like  to  show  the  expression  levels  of the top  down or
+up-regulated  genes using  different  color  schemas.  For this we can use the
+function `enr$topplot`. Here an example:
+
+```{r label=topplot,fig.width=10,fig.height=5}
+### some random data
+df=data.frame(matrix(runif(104,min=0,max=10),ncol=4))
+colnames(df)=c("X1","X2", "X3", "X4")
+rownames(df)=LETTERS[1:26]
+df=df[order(df[,1]/df[,2]),]
+par(mfrow=c(1,2),mai=rep(0.3,4))
+enr$topplot(df,text.start=0.6,scale="red")
+### other scale, just two columns
+enr$topplot(df[,1:2],text.start=0.7,scale="darkgreen")
+```
 

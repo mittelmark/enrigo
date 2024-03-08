@@ -714,6 +714,7 @@ enr$lf2dex <- function (x,threshold.control=1, threshold.groups=0.5) {
         tab1[idx2,2] = FALSE
     }
     if (threshold.control < 0) {
+        print("here")
         tab1 = data < threshold.control
         idx1 = tab1[,1] & !(tab1[,2]) & (data[,1]-data[,2] > threshold.groups)
         tab1[idx1,1] = FALSE
@@ -722,6 +723,241 @@ enr$lf2dex <- function (x,threshold.control=1, threshold.groups=0.5) {
     }
     return(tab1)
 }
+
+#' \name{enr$vennplot}
+#' \alias{enr_vennplot}
+#' \alias{enr$vennplot}
+#' \title{Create a two-set venn diagram with the standard color codes}
+#' \description{
+#'   Use a TRUE/FALSE data frame to create a two set venn diagram plot.
+#' }
+#' \usage{ enr_vennplot(x, cols=c("#EF536BBB","#61E04FBB","#536BEFBB")) }
+#'
+#' \arguments{
+#'  \item{x}{a two column table with TRUE/FALSE values}
+#'  \item{cols}{list of two or three colors with transparency, 
+#'              default: c("#EF536BBB","#61E04FBB","#536BEFBB")}
+#' }
+#' \examples{
+#' tab=data.frame(matrix(rnorm(100),ncol=2))
+#' colnames(tab)=c('A', 'B')
+#' tab=tab>0
+#' head(tab)
+#' table(tab[,1],tab[,2])
+#' enr$vennplot(tab)
+#' }
+#'
+
+enr$vennplot <- function (x,cols=c("#EF536BBB","#61E04FBB","#536BEFBB")) { 
+    venn = function (x,y=NULL,z=NULL,vars=NULL,col=c("#cc888899","#8888cc99","#88cc8899"),cex=1.6,...) {
+        circle = function (x,y, radius=1,length=100) {
+            theta = seq(0, 2 * pi, length = 100) 
+            return(list(x=radius*cos(theta)+x,
+                        y=radius*sin(theta)+y))
+        }
+        venn2D = function (x,col=c("#cc888899","#8888cc99"),cex=1.6,...) {
+            if (!is.data.frame(x) & !is.matrix(x)) {
+                stop("Error: Not a two column matrix or data frame!")
+            }
+            if (ncol(x) != 2) {
+                stop("Error: Not a two column matrix or data frame!")   
+            }
+            # reset to useful values, slightly smaller than the defaults:
+            # defaults: mai=c(1.02, 0.82, 0.82, 0.42)
+            #opar=par(mai=c(1, 0.8, 0.8, 0.4),pty='s')
+            # compute circle size
+            circ.cex=60*par()$fin[1]/9
+            
+            plot(c(1,2),c(1,1),xlim=c(0.5,2.5),ylim=c(0.5,2.5),
+             pch=19,cex=circ.cex,axes=FALSE,type="n",
+             xlab="",ylab="",
+             col=col,...)
+            polygon(circle(1.2,1.5,radius=0.65),col=col[1],border=col[1])
+            polygon(circle(1.8,1.5,radius=0.65),col=col[2],border=col[2])
+            text(1.1,2.3,colnames(x)[1],cex=cex)
+            text(1.9,2.3,colnames(x)[2],cex=cex)
+            # the changes
+            if (class(x[,1]) == "logical") {
+                is=length(which(x[,1] & x[,2]))
+                ls=length(which(x[,1] & !x[,2]))
+                rs=length(which(!x[,1] & x[,2]))
+                os=length(which(!x[,1] & !x[,2]))
+            } else {
+                xv=x[,1]
+                xv=xv[xv!=""]
+                yv=x[,2]
+                yv=yv[yv!=""]
+                is=length(intersect(xv,yv))
+                ls=length(setdiff(xv,yv))
+                rs=length(setdiff(yv,xv))
+                os=""
+            }   
+            text(1.5,1.5,is,cex=cex)
+            text(0.9,1.5,ls,cex=cex)
+            text(2.1,1.5,rs,cex=cex)
+            text(1.5,0.7,os,cex=cex)
+            #par(opar)
+        }                                                   
+        if (class(y)[1] != "NULL" & class(z)[1]!="NULL") {
+            M=matrix('',ncol=3,nrow=max(c(length(x),length(y),length(z))))
+            M[1:length(x),1]=x
+            M[1:length(y),2]=y
+            M[1:length(z),3]=z        
+            colnames(M)=c('x','y','z')
+            if (class(vars[1])!="NULL") {
+                colnames(M)=vars
+            }
+            venn(M,col=col,cex=cex,...)
+        } else if (class(y)[1] != "NULL") {
+            M=matrix('',ncol=2,nrow=max(c(length(x),length(y))))
+            M[1:length(x),1]=x
+            M[1:length(y),2]=y
+            colnames(M)=c('x','y')
+            if (class(vars[1])!="NULL") {
+                colnames(M)=vars
+            }
+            venn(M,col=col,cex=cex,...)
+        } else if (!is.data.frame(x) & !is.matrix(x)) {
+            stop("Error: Not a matrix or data frame!")
+        } else if (ncol(x) == 2) {
+            venn2D(x,col=col[1:2],cex=cex,...)
+        } else if (ncol(x) != 3) {
+            stop("Error: Only two or three column matrix or data frame is accepted!")  
+        } else if (!class(x[,1]) == "logical") {    
+            rnames=unique(c(x[,1],x[,2],x[,3]))
+            rnames=rnames[which(rnames!="")]
+            M=matrix(FALSE,ncol=3,nrow=length(rnames))
+            rownames(M)=rnames
+            colnames(M)=colnames(x)
+            for (i in 1:3) {
+                idx=which(rnames%in%x[,i])
+                M[idx,i]=TRUE
+            }   
+            venn(M,col=col,cex=cex,...)
+        } else {  
+            #opar=par(mai=c(0.5, 0.4, 0.4, 0.2),pty='s')
+            circ.cex=70*par()$fin[1]/9
+            plot(c(3.5,5.5,4.5),c(5.5,5.5,3.5),xlim=c(0,9),ylim=c(0,9),
+                 pch=19,cex=circ.cex,axes=FALSE,asp=1,
+                 xlab="",ylab="", col=col,type="n",...)
+            polygon(circle(3.5,5.5,radius=2.3),col=col[1],border=col[1])
+            polygon(circle(5.5,5.5,radius=2.3),col=col[2],border=col[2])
+            polygon(circle(4.5,3.5,radius=2.3),col=col[3],border=col[3])
+            
+            text(0.5,7,colnames(x)[1],cex=cex)
+            text(8.5,7,colnames(x)[2],cex=cex)
+            text(4.5,0.25,colnames(x)[3],cex=cex)
+            is=length(which(x[,1] & x[,2] & x[,3]))
+            ls=length(which(x[,1] & !x[,2] & !x[,3]))
+            rs=length(which(!x[,1] & x[,2] & !x[,3]))
+            bs=length(which(!x[,1] & !x[,2] & x[,3]))        
+            os=length(which(!x[,1] & !x[,2] & !x[,3]))
+            xys=length(which(x[,1] & x[,2] & !x[,3]))
+            xzs=length(which(x[,1] & !x[,2] & x[,3]))        
+            yzs=length(which(!x[,1] & x[,2] & x[,3]))                
+            text(4.5,4.8,is,cex=cex*0.8)
+            if (os>0) {
+                text(4.5,8.5,os,cex=cex*0.8)
+            }
+            text(2.2,6,ls,cex=cex*0.8)
+            text(6.8,6,rs,cex=cex*0.8)
+            text(4.5,2.1,bs,cex=cex*0.8)
+            text(4.5,6.6,xys,cex=cex*0.8)    
+            text(2.9,4,xzs,cex=cex*0.8)        
+            text(6,4,yzs,cex=cex*0.8)            
+            #par(opar)
+        }   
+    }                                                      
+    venn(x,col=cols)
+}
+
+#' \name{enr$topplot}
+#' \alias{enr_topplot}
+#' \alias{enr$topplot}
+#' \title{Create an color coded plot of expression levels}
+#' \description{
+#'   Creates a plot were RNA or other expression levels are encoded using more 
+#'   or less saturated color schemas.
+#' }
+#' \usage{ enr_topplot(x, range=c(0,10),legend=TRUE,scale="red",text.start=-0.8) }
+#'
+#' \arguments{
+#'  \item{x}{a two to six column data frame with expression levels, usually on a log2-scale. }
+#'  \item{range}{value range used for the scaling of colors}
+#'  \item{legend}{Should a color legend be drawn right of the color code rectangles, default: TRUE}
+#'  \item{scale}{The color schema used for scaling, possible values are 'red', 'green', 'darkgreen', 'blue' and 'gray' (or 'grey'), default: 'red'} 
+#'  \item{text.start}{Where to place te rownames on the x-axis, change this if you have short labels to more positive values, default: -0.8}
+#' }
+#' \examples{
+#' df=data.frame(matrix(runif(104,min=0,max=10),ncol=4))
+#' colnames(df)=c("X1","X2", "X3", "X4")
+#' rownames(df)=LETTERS[1:26]
+#' df=df[order(df[,1]/df[,2]),]
+#' par(mfrow=c(1,2),mai=rep(0.1,4))
+#' enr$topplot(df,text.start=0.8,scale="darkgreen")
+#' enr$topplot(df,text.start=0.8,scale="red")
+#' }
+#'
+
+enr$topplot <- function (x, range=c(0,10), legend=TRUE, scale="red", text.start=-0.8) {
+    mx=ncol(x)
+    if (legend) {
+        mx=mx+3
+    }
+    my=nrow(x)
+    plot(1,type="n",xlim=c(-1,mx),ylim=c(-2,my+1),xlab="",ylab="",axes=FALSE)
+    lastx = 0
+    for (xi in 1:ncol(x)) {
+        for (yi in 1:nrow(x)) {
+            colp=(x[yi,xi]-range[1])/(range[2]-range[1])
+            colp=1-colp
+            if (scale == "red") {
+                col=rgb(1.0,colp,colp)
+            } else if (scale == "blue") {
+                col=rgb(colp,colp,1.0)
+            } else if (scale == "green") {
+                col=rgb(colp,1.0,colp)
+            } else if (scale == "darkgreen") {
+                col=rgb(colp,0.5+colp/2,colp)
+            } else if (scale %in% c("gray", "grey")) {
+                col=rgb(0.33+colp/1.5,0.33+colp/1.5,0.33+colp/1.5)
+            }
+            rect(xi*0.5+0.8,my-yi,xi*0.5+1.2,my-yi+1,col=col)
+            if (xi == 1) {
+                lines(x=c(xi*0.5+0.7,xi*0.5+0.8),y=c(my-yi+0.5,my-yi+0.5))
+            }
+            lastx = xi*0.5+1.2
+        }
+    }
+    text(text.start,my:1-0.5,rownames(x),pos=4,cex=0.8)
+    if (legend) {
+        lrange=round(my*0.66)
+        lstart=(my-lrange)/2
+        #rect(3.45,lstart+1*(lrange/20)-0.05,4.35,lstart+((20+1)*lrange/20)+0.05,border=1,lwd=1)
+        for(i in 0:20) {
+            colp=1-0.05*i
+            if (scale == "red") {
+                col=rgb(1.0,colp,colp)
+            } else if (scale == "blue") {
+                col=rgb(colp,colp,1.0)
+            } else if (scale == "green") {
+                col=rgb(colp,1.0,colp)
+            } else if (scale == "darkgreen") {
+                col=rgb(colp,0.5+colp/2,colp)
+            } else if (scale == "gray") {
+                col=rgb(0.33+colp/1.5,0.33+colp/1.5,0.33+colp/1.5)
+            }
+            rect(lastx+0.6,lstart+i*(lrange/20),lastx+1.0,lstart+((i+1)*lrange/20),col=col,border=1,lwd=0.2)
+            if (i %in% c(0,4,8,12,16,20)) {
+                text(lastx+1.1,lstart+(i+0.5)*(lrange/20),sprintf("%0.2f",i*0.05*max(range)),cex=0.8,pos=4)
+                lines(x=c(lastx+1.0,lastx+1.1),y=rep(lstart+((i+0.5)*lrange/20),2))
+
+            }
+        }
+    }
+    text(seq(1.5,1.5+(0.5*(ncol(x)-1)),by=0.5),0,paste("|\n",colnames(x),sep=""),pos=1)
+}
+
 enr_annotation = enr$annotation
 enr_download   = enr$download
 enr_enrichment = enr$enrichment
@@ -731,7 +967,8 @@ enr_name2id    = enr$name2id
 enr_new        = enr$new
 enr_lf2dex     = enr$lf2dex
 enr_symbol2loc = enr$symbol2loc
-
+enr_topplot   = enr$topplot
+enr_vennplot   = enr$vennplot
 
 ## Private functions
 
